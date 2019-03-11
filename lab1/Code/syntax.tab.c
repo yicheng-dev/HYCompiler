@@ -56,7 +56,7 @@
 #define YYPURE 0
 
 /* Using locations.  */
-#define YYLSP_NEEDED 0
+#define YYLSP_NEEDED 1
 
 
 
@@ -172,13 +172,25 @@ typedef union YYSTYPE
 # define YYSTYPE_IS_TRIVIAL 1
 #endif
 
+#if ! defined YYLTYPE && ! defined YYLTYPE_IS_DECLARED
+typedef struct YYLTYPE
+{
+  int first_line;
+  int first_column;
+  int last_line;
+  int last_column;
+} YYLTYPE;
+# define yyltype YYLTYPE /* obsolescent; will be withdrawn */
+# define YYLTYPE_IS_DECLARED 1
+# define YYLTYPE_IS_TRIVIAL 1
+#endif
 
 
 /* Copy the second part of user declarations.  */
 
 
 /* Line 216 of yacc.c.  */
-#line 182 ".//syntax.tab.c"
+#line 194 ".//syntax.tab.c"
 
 #ifdef short
 # undef short
@@ -336,14 +348,16 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
-	 || (defined YYSTYPE_IS_TRIVIAL && YYSTYPE_IS_TRIVIAL)))
+	 || (defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL \
+	     && defined YYSTYPE_IS_TRIVIAL && YYSTYPE_IS_TRIVIAL)))
 
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
   yytype_int16 yyss;
   YYSTYPE yyvs;
-  };
+    YYLTYPE yyls;
+};
 
 /* The size of the maximum gap between one aligned stack and the next.  */
 # define YYSTACK_GAP_MAXIMUM (sizeof (union yyalloc) - 1)
@@ -351,8 +365,8 @@ union yyalloc
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 # define YYSTACK_BYTES(N) \
-     ((N) * (sizeof (yytype_int16) + sizeof (YYSTYPE)) \
-      + YYSTACK_GAP_MAXIMUM)
+     ((N) * (sizeof (yytype_int16) + sizeof (YYSTYPE) + sizeof (YYLTYPE)) \
+      + 2 * YYSTACK_GAP_MAXIMUM)
 
 /* Copy COUNT objects from FROM to TO.  The source and destination do
    not overlap.  */
@@ -802,7 +816,7 @@ do {									  \
     {									  \
       YYFPRINTF (stderr, "%s ", Title);					  \
       yy_symbol_print (stderr,						  \
-		  Type, Value); \
+		  Type, Value, Location); \
       YYFPRINTF (stderr, "\n");						  \
     }									  \
 } while (YYID (0))
@@ -816,17 +830,19 @@ do {									  \
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp)
 #else
 static void
-yy_symbol_value_print (yyoutput, yytype, yyvaluep)
+yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
+    YYLTYPE const * const yylocationp;
 #endif
 {
   if (!yyvaluep)
     return;
+  YYUSE (yylocationp);
 # ifdef YYPRINT
   if (yytype < YYNTOKENS)
     YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
@@ -848,13 +864,14 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep)
+yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp)
 #else
 static void
-yy_symbol_print (yyoutput, yytype, yyvaluep)
+yy_symbol_print (yyoutput, yytype, yyvaluep, yylocationp)
     FILE *yyoutput;
     int yytype;
     YYSTYPE const * const yyvaluep;
+    YYLTYPE const * const yylocationp;
 #endif
 {
   if (yytype < YYNTOKENS)
@@ -862,7 +879,9 @@ yy_symbol_print (yyoutput, yytype, yyvaluep)
   else
     YYFPRINTF (yyoutput, "nterm %s (", yytname[yytype]);
 
-  yy_symbol_value_print (yyoutput, yytype, yyvaluep);
+  YY_LOCATION_PRINT (yyoutput, *yylocationp);
+  YYFPRINTF (yyoutput, ": ");
+  yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp);
   YYFPRINTF (yyoutput, ")");
 }
 
@@ -902,11 +921,12 @@ do {								\
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yy_reduce_print (YYSTYPE *yyvsp, int yyrule)
+yy_reduce_print (YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule)
 #else
 static void
-yy_reduce_print (yyvsp, yyrule)
+yy_reduce_print (yyvsp, yylsp, yyrule)
     YYSTYPE *yyvsp;
+    YYLTYPE *yylsp;
     int yyrule;
 #endif
 {
@@ -921,7 +941,7 @@ yy_reduce_print (yyvsp, yyrule)
       fprintf (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr, yyrhs[yyprhs[yyrule] + yyi],
 		       &(yyvsp[(yyi + 1) - (yynrhs)])
-		       		       );
+		       , &(yylsp[(yyi + 1) - (yynrhs)])		       );
       fprintf (stderr, "\n");
     }
 }
@@ -929,7 +949,7 @@ yy_reduce_print (yyvsp, yyrule)
 # define YY_REDUCE_PRINT(Rule)		\
 do {					\
   if (yydebug)				\
-    yy_reduce_print (yyvsp, Rule); \
+    yy_reduce_print (yyvsp, yylsp, Rule); \
 } while (YYID (0))
 
 /* Nonzero means print parse trace.  It is left uninitialized so that
@@ -1180,16 +1200,18 @@ yysyntax_error (char *yyresult, int yystate, int yychar)
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep)
+yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp)
 #else
 static void
-yydestruct (yymsg, yytype, yyvaluep)
+yydestruct (yymsg, yytype, yyvaluep, yylocationp)
     const char *yymsg;
     int yytype;
     YYSTYPE *yyvaluep;
+    YYLTYPE *yylocationp;
 #endif
 {
   YYUSE (yyvaluep);
+  YYUSE (yylocationp);
 
   if (!yymsg)
     yymsg = "Deleting";
@@ -1230,6 +1252,8 @@ YYSTYPE yylval;
 
 /* Number of syntax errors so far.  */
 int yynerrs;
+/* Location data for the look-ahead symbol.  */
+YYLTYPE yylloc;
 
 
 
@@ -1292,16 +1316,21 @@ yyparse ()
   YYSTYPE *yyvs = yyvsa;
   YYSTYPE *yyvsp;
 
+  /* The location stack.  */
+  YYLTYPE yylsa[YYINITDEPTH];
+  YYLTYPE *yyls = yylsa;
+  YYLTYPE *yylsp;
+  /* The locations where the error started and ended.  */
+  YYLTYPE yyerror_range[2];
 
-
-#define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N))
+#define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
 
   YYSIZE_T yystacksize = YYINITDEPTH;
 
   /* The variables used to return semantic value and location from the
      action routines.  */
   YYSTYPE yyval;
-
+  YYLTYPE yyloc;
 
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
@@ -1321,6 +1350,12 @@ yyparse ()
 
   yyssp = yyss;
   yyvsp = yyvs;
+  yylsp = yyls;
+#if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+  /* Initialize the default location before parsing starts.  */
+  yylloc.first_line   = yylloc.last_line   = 1;
+  yylloc.first_column = yylloc.last_column = 0;
+#endif
 
   goto yysetstate;
 
@@ -1347,7 +1382,7 @@ yyparse ()
 	   memory.  */
 	YYSTYPE *yyvs1 = yyvs;
 	yytype_int16 *yyss1 = yyss;
-
+	YYLTYPE *yyls1 = yyls;
 
 	/* Each stack pointer address is followed by the size of the
 	   data in use in that stack, in bytes.  This used to be a
@@ -1356,9 +1391,9 @@ yyparse ()
 	yyoverflow (YY_("memory exhausted"),
 		    &yyss1, yysize * sizeof (*yyssp),
 		    &yyvs1, yysize * sizeof (*yyvsp),
-
+		    &yyls1, yysize * sizeof (*yylsp),
 		    &yystacksize);
-
+	yyls = yyls1;
 	yyss = yyss1;
 	yyvs = yyvs1;
       }
@@ -1381,7 +1416,7 @@ yyparse ()
 	  goto yyexhaustedlab;
 	YYSTACK_RELOCATE (yyss);
 	YYSTACK_RELOCATE (yyvs);
-
+	YYSTACK_RELOCATE (yyls);
 #  undef YYSTACK_RELOCATE
 	if (yyss1 != yyssa)
 	  YYSTACK_FREE (yyss1);
@@ -1391,7 +1426,7 @@ yyparse ()
 
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
-
+      yylsp = yyls + yysize - 1;
 
       YYDPRINTF ((stderr, "Stack size increased to %lu\n",
 		  (unsigned long int) yystacksize));
@@ -1468,7 +1503,7 @@ yybackup:
 
   yystate = yyn;
   *++yyvsp = yylval;
-
+  *++yylsp = yylloc;
   goto yynewstate;
 
 
@@ -1499,38 +1534,39 @@ yyreduce:
      GCC warning that YYVAL may be used uninitialized.  */
   yyval = yyvsp[1-yylen];
 
-
+  /* Default location.  */
+  YYLLOC_DEFAULT (yyloc, (yylsp - yylen), yylen);
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
         case 2:
 #line 49 ".//syntax.y"
-    { (yyval.node) = create_node("Program", "", -1); root = (yyval.node); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Program", "", -1, (yyloc).first_line); root = (yyval.node); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 3:
 #line 51 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDefList", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("ExtDefList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 4:
 #line 52 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDefList", "", -1); ;}
+    { (yyval.node) = create_node("ExtDefList", "", -1, (yyloc).first_line); ;}
     break;
 
   case 5:
 #line 54 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDef", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("ExtDef", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 6:
 #line 55 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDef", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("ExtDef", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 7:
 #line 56 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDef", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("ExtDef", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 8:
@@ -1540,32 +1576,32 @@ yyreduce:
 
   case 9:
 #line 59 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDecList", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("ExtDecList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 10:
 #line 60 ".//syntax.y"
-    { (yyval.node) = create_node("ExtDecList", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("ExtDecList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 11:
 #line 64 ".//syntax.y"
-    { (yyval.node) = create_node("Specifier", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Specifier", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 12:
 #line 65 ".//syntax.y"
-    { (yyval.node) = create_node("Specifier", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Specifier", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 13:
 #line 67 ".//syntax.y"
-    { (yyval.node) = create_node("StructSpecifier", "", -1); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
+    { (yyval.node) = create_node("StructSpecifier", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
     break;
 
   case 14:
 #line 68 ".//syntax.y"
-    { (yyval.node) = create_node("StructSpecifier", "", -1); add_child_sibling((yyval.node), 2 , (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("StructSpecifier", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2 , (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 15:
@@ -1575,27 +1611,27 @@ yyreduce:
 
   case 16:
 #line 71 ".//syntax.y"
-    { (yyval.node) = create_node("OptTag", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("OptTag", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 17:
 #line 72 ".//syntax.y"
-    { (yyval.node) = create_node("OptTag", "", -1); ;}
+    { (yyval.node) = create_node("OptTag", "", -1, (yyloc).first_line); ;}
     break;
 
   case 18:
 #line 74 ".//syntax.y"
-    { (yyval.node) = create_node("Tag", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Tag", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 19:
 #line 78 ".//syntax.y"
-    { (yyval.node) = create_node("VarDec", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("VarDec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 20:
 #line 79 ".//syntax.y"
-    { (yyval.node) = create_node("VarDec", "", -1); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
+    { (yyval.node) = create_node("VarDec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
     break;
 
   case 21:
@@ -1605,12 +1641,12 @@ yyreduce:
 
   case 22:
 #line 82 ".//syntax.y"
-    { (yyval.node) = create_node("FunDec", "", -1); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
+    { (yyval.node) = create_node("FunDec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
     break;
 
   case 23:
 #line 83 ".//syntax.y"
-    { (yyval.node) = create_node("FunDec", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("FunDec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 24:
@@ -1620,77 +1656,77 @@ yyreduce:
 
   case 25:
 #line 86 ".//syntax.y"
-    { (yyval.node) = create_node("VarList", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("VarList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 26:
 #line 87 ".//syntax.y"
-    { (yyval.node) = create_node("VarList", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("VarList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 27:
 #line 89 ".//syntax.y"
-    { (yyval.node) = create_node("ParamDec", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("ParamDec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 28:
 #line 93 ".//syntax.y"
-    { (yyval.node) = create_node("CompSt", "", -1); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
+    { (yyval.node) = create_node("CompSt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
     break;
 
   case 29:
 #line 95 ".//syntax.y"
-    { (yyval.node) = create_node("StmtList", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("StmtList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 30:
 #line 96 ".//syntax.y"
-    { (yyval.node) = create_node("StmtList", "", -1); ;}
+    { (yyval.node) = create_node("StmtList", "", -1, (yyloc).first_line); ;}
     break;
 
   case 31:
 #line 98 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 32:
 #line 99 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 33:
 #line 100 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 34:
 #line 101 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
     break;
 
   case 35:
 #line 102 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 7, (yyvsp[(1) - (7)].node), (yyvsp[(2) - (7)].node), (yyvsp[(3) - (7)].node), (yyvsp[(4) - (7)].node), (yyvsp[(5) - (7)].node), (yyvsp[(6) - (7)].node), (yyvsp[(7) - (7)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 7, (yyvsp[(1) - (7)].node), (yyvsp[(2) - (7)].node), (yyvsp[(3) - (7)].node), (yyvsp[(4) - (7)].node), (yyvsp[(5) - (7)].node), (yyvsp[(6) - (7)].node), (yyvsp[(7) - (7)].node)); ;}
     break;
 
   case 36:
 #line 103 ".//syntax.y"
-    { (yyval.node) = create_node("Stmt", "", -1); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
+    { (yyval.node) = create_node("Stmt", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 5, (yyvsp[(1) - (5)].node), (yyvsp[(2) - (5)].node), (yyvsp[(3) - (5)].node), (yyvsp[(4) - (5)].node), (yyvsp[(5) - (5)].node)); ;}
     break;
 
   case 37:
 #line 107 ".//syntax.y"
-    { (yyval.node) = create_node("DefList", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("DefList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 38:
 #line 108 ".//syntax.y"
-    { (yyval.node) = create_node("DefList", "", -1); ;}
+    { (yyval.node) = create_node("DefList", "", -1, (yyloc).first_line); ;}
     break;
 
   case 39:
 #line 110 ".//syntax.y"
-    { (yyval.node) = create_node("Def", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Def", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 40:
@@ -1700,127 +1736,127 @@ yyreduce:
 
   case 41:
 #line 113 ".//syntax.y"
-    { (yyval.node) = create_node("DecList", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("DecList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 42:
 #line 114 ".//syntax.y"
-    { (yyval.node) = create_node("DecList", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("DecList", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 43:
 #line 116 ".//syntax.y"
-    { (yyval.node) = create_node("Dec", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Dec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 44:
 #line 117 ".//syntax.y"
-    { (yyval.node) = create_node("Dec", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Dec", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 45:
 #line 121 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 46:
 #line 122 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 47:
 #line 123 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 48:
 #line 124 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 49:
 #line 125 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 50:
 #line 126 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 51:
 #line 127 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 52:
 #line 128 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 53:
 #line 129 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 54:
 #line 130 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 55:
 #line 131 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 2, (yyvsp[(1) - (2)].node), (yyvsp[(2) - (2)].node)); ;}
     break;
 
   case 56:
 #line 132 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
     break;
 
   case 57:
 #line 133 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 58:
 #line 134 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 4, (yyvsp[(1) - (4)].node), (yyvsp[(2) - (4)].node), (yyvsp[(3) - (4)].node), (yyvsp[(4) - (4)].node)); ;}
     break;
 
   case 59:
 #line 135 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 60:
 #line 136 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 61:
 #line 137 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 62:
 #line 138 ".//syntax.y"
-    { (yyval.node) = create_node("Exp", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Exp", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
   case 63:
 #line 140 ".//syntax.y"
-    { (yyval.node) = create_node("Args", "", -1); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
+    { (yyval.node) = create_node("Args", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 3, (yyvsp[(1) - (3)].node), (yyvsp[(2) - (3)].node), (yyvsp[(3) - (3)].node)); ;}
     break;
 
   case 64:
 #line 141 ".//syntax.y"
-    { (yyval.node) = create_node("Args", "", -1); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
+    { (yyval.node) = create_node("Args", "", -1, (yyloc).first_line); add_child_sibling((yyval.node), 1, (yyvsp[(1) - (1)].node)); ;}
     break;
 
 
 /* Line 1267 of yacc.c.  */
-#line 1824 ".//syntax.tab.c"
+#line 1860 ".//syntax.tab.c"
       default: break;
     }
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
@@ -1830,7 +1866,7 @@ yyreduce:
   YY_STACK_PRINT (yyss, yyssp);
 
   *++yyvsp = yyval;
-
+  *++yylsp = yyloc;
 
   /* Now `shift' the result of the reduction.  Determine what state
      that goes to, based on the state we popped back to and the rule
@@ -1892,7 +1928,7 @@ yyerrlab:
 #endif
     }
 
-
+  yyerror_range[0] = yylloc;
 
   if (yyerrstatus == 3)
     {
@@ -1908,7 +1944,7 @@ yyerrlab:
       else
 	{
 	  yydestruct ("Error: discarding",
-		      yytoken, &yylval);
+		      yytoken, &yylval, &yylloc);
 	  yychar = YYEMPTY;
 	}
     }
@@ -1929,6 +1965,7 @@ yyerrorlab:
   if (/*CONSTCOND*/ 0)
      goto yyerrorlab;
 
+  yyerror_range[0] = yylsp[1-yylen];
   /* Do not reclaim the symbols of the rule which action triggered
      this YYERROR.  */
   YYPOPSTACK (yylen);
@@ -1962,9 +1999,9 @@ yyerrlab1:
       if (yyssp == yyss)
 	YYABORT;
 
-
+      yyerror_range[0] = *yylsp;
       yydestruct ("Error: popping",
-		  yystos[yystate], yyvsp);
+		  yystos[yystate], yyvsp, yylsp);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -1975,6 +2012,11 @@ yyerrlab1:
 
   *++yyvsp = yylval;
 
+  yyerror_range[1] = yylloc;
+  /* Using YYLLOC is tempting, but would change the location of
+     the look-ahead.  YYLOC is available though.  */
+  YYLLOC_DEFAULT (yyloc, (yyerror_range - 1), 2);
+  *++yylsp = yyloc;
 
   /* Shift the error token.  */
   YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
@@ -2010,7 +2052,7 @@ yyexhaustedlab:
 yyreturn:
   if (yychar != YYEOF && yychar != YYEMPTY)
      yydestruct ("Cleanup: discarding lookahead",
-		 yytoken, &yylval);
+		 yytoken, &yylval, &yylloc);
   /* Do not reclaim the symbols of the rule which action triggered
      this YYABORT or YYACCEPT.  */
   YYPOPSTACK (yylen);
@@ -2018,7 +2060,7 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-		  yystos[*yyssp], yyvsp);
+		  yystos[*yyssp], yyvsp, yylsp);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
@@ -2040,5 +2082,5 @@ yyreturn:
 #include "lex.yy.c"
 
 yyerror(char *msg){
-  fprintf(stderr, "line %d: %s\n", line_num, msg);
+  fprintf(stderr, "line %d: %s\n", yylineno, msg);
 }
