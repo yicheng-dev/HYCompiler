@@ -1,10 +1,12 @@
 %{
   #include "syntax.tab.h"
   #include <stdio.h>
+  #include "AST.h"
   FILE *in;
   yydebug = 1;
   int error_flag = 0;
   int line_num = 1;
+  AST_Node *root;
 %}
 
 %option yylineno
@@ -55,39 +57,39 @@ RC				\}
 {COMMENT}		{ }
 {COMMENT_LINE}	{ }
 {COMMENT_ERROR}	{ printf("Error type A at Line %d: Invalid comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
-{STRUCT}		{ return STRUCT; }
-{RETURN}		{ return RETURN; }
-{IF}			{ return IF; }
-{ELSE}			{ return ELSE; }
-{WHILE}			{ return WHILE; }
-{TYPE}			{ return TYPE; }
-{OCTINT}		{ return INT; }
-{HEXINT}		{ return INT; }
-{INT}			{ return INT; }
+{STRUCT}		{ yylval.node = create_node("STRUCT", yytext, STRUCT); return STRUCT; }
+{RETURN}		{ yylval.node = create_node("RETURN", yytext, RETURN); return RETURN; }
+{IF}			{ yylval.node = create_node("IF", yytext, IF); return IF; }
+{ELSE}			{ yylval.node = create_node("ELSE", yytext, ELSE); return ELSE; }
+{WHILE}			{ yylval.node = create_node("WHILE", yytext, WHILE); return WHILE; }
+{TYPE}			{ yylval.node = create_node("TYPE", yytext, TYPE); return TYPE; }
+{OCTINT}		{ yylval.node = create_node("INT", yytext, INT); return INT; }
+{HEXINT}		{ yylval.node = create_node("INT", yytext, INT); return INT; }
+{INT}			{ yylval.node = create_node("INT", yytext, INT); return INT; }
 {HEXINT_ERROR}	{ printf("Error type A at Line %d: Invalid Hex number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {OCTINT_ERROR}	{ printf("Error type A at Line %d: Invalid Oct number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
-{FLOAT}			{ return FLOAT; }
-{FLOAT_E}		{ return FLOAT; }
+{FLOAT}			{ yylval.node = create_node("FLOAT", yytext, FLOAT); return FLOAT; }
+{FLOAT_E}		{ yylval.node = create_node("FLOAT", yytext, FLOAT); return FLOAT; }
 {FLOAT_ERROR}	{ printf("Error type A at Line %d: Invalid FLOAT \'%s\'.\n", yylineno, yytext); error_flag = 1; }
-{ID}			{ return ID; }
-{SEMI} 			{ return SEMI; }
-{COMMA}			{ return COMMA; }
-{ASSIGNOP}		{ return ASSIGNOP; }
-{RELOP}			{ return RELOP; }
-{PLUS}			{ return PLUS; }
-{MINUS}			{ return MINUS; }
-{STAR}			{ return STAR; }
-{DIV}			{ return DIV; }
-{AND}			{ return AND; }
-{OR}			{ return OR; }
-{DOT}			{ return DOT; }
-{NOT}			{ return NOT; }
-{LP}			{ return LP; }
-{RP}			{ return RP; }
-{LB}			{ return LB; }
-{RB}			{ return RB; }
-{LC}			{ return LC; }
-{RC}			{ return RC; }
+{ID}			{ yylval.node = create_node("ID", yytext, ID); return ID; }
+{SEMI} 			{ yylval.node = create_node("SEMI", yytext, SEMI); return SEMI; }
+{COMMA}			{ yylval.node = create_node("COMMA", yytext, COMMA); return COMMA; }
+{ASSIGNOP}		{ yylval.node = create_node("ASSIGNOP", yytext, ASSIGNOP); return ASSIGNOP; }
+{RELOP}			{ yylval.node = create_node("RELOP", yytext, RELOP); return RELOP; }
+{PLUS}			{ yylval.node = create_node("PLUS", yytext, PLUS); return PLUS; }
+{MINUS}			{ yylval.node = create_node("MINUS", yytext, MINUS); return MINUS; }
+{STAR}			{ yylval.node = create_node("STAR", yytext, STAR); return STAR; }
+{DIV}			{ yylval.node = create_node("DIV", yytext, DIV); return DIV; }
+{AND}			{ yylval.node = create_node("AND", yytext, AND); return AND; }
+{OR}			{ yylval.node = create_node("OR", yytext, OR); return OR; }
+{DOT}			{ yylval.node = create_node("DOT", yytext, DOT); return DOT; }
+{NOT}			{ yylval.node = create_node("NOT", yytext, NOT); return NOT; }
+{LP}			{ yylval.node = create_node("LP", yytext, LP); return LP; }
+{RP}			{ yylval.node = create_node("RP", yytext, RP); return RP; }
+{LB}			{ yylval.node = create_node("LB", yytext, LB); return LB; }
+{RB}			{ yylval.node = create_node("RB", yytext, RB); return RB; }
+{LC}			{ yylval.node = create_node("LC", yytext, LC); return LC; }
+{RC}			{ yylval.node = create_node("RC", yytext, RC); return RC; }
 .				{ printf("Error type A at Line %d: Mysterious characters \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 
 %%
@@ -99,13 +101,11 @@ int main(int argc, char **argv) {
 	    return 1;
 	  }
 	  yyrestart(in);
-    if (error_flag == 0){
-      AST_Node *root = malloc(sizeof(AST_Node));
-	    yyparse();
-    }
-	  return 0;
   }
-  if (error_flag == 0)
-    yyparse();
-  return 0;
+  root = malloc(sizeof(AST_Node));
+	yyparse();
+  if (error_flag == 0){
+    print_AST(root, 0);
+  }
+	return 0;
 }

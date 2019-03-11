@@ -104,15 +104,12 @@
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
-#line 8 ".//syntax.y"
+#line 10 ".//syntax.y"
 {
-  int type_int;
-  float type_float;
-  double type_double;
   AST_Node *node;
 }
 /* Line 1529 of yacc.c.  */
-#line 116 ".//syntax.tab.h"
+#line 113 ".//syntax.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
