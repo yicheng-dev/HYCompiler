@@ -1,0 +1,6 @@
+struct Student {
+  int score[20];
+  int age;
+  double weight;
+  struct School school;
+};
