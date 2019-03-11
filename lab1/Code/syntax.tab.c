@@ -2082,5 +2082,5 @@ yyreturn:
 #include "lex.yy.c"
 
 yyerror(char *msg){
-  fprintf(stderr, "line %d: %s\n", yylineno, msg);
+  printf("Error type B at Line %d: %s.\n", yylineno, msg);
 }

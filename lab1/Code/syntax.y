@@ -146,5 +146,5 @@ Args : Exp COMMA Args { $$ = create_node("Args", "", -1, @$.first_line); add_chi
 #include "lex.yy.c"
 
 yyerror(char *msg){
-  fprintf(stderr, "line %d: %s\n", yylineno, msg);
+  printf("Error type B at Line %d: %s.\n", yylineno, msg);
 }

@@ -915,7 +915,7 @@ case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
 #line 66 ".//lexical.l"
-{ printf("Error type A at Line %d: Invalid comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{ printf("Error type A at Line %d: Illegal comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
@@ -965,12 +965,12 @@ YY_RULE_SETUP
 case 15:
 YY_RULE_SETUP
 #line 76 ".//lexical.l"
-{ printf("Error type A at Line %d: Invalid Hex number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{ printf("Error type A at Line %d: Illegal hexadecimal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 77 ".//lexical.l"
-{ printf("Error type A at Line %d: Invalid Oct number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{ printf("Error type A at Line %d: Illegal octal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
@@ -985,7 +985,7 @@ YY_RULE_SETUP
 case 19:
 YY_RULE_SETUP
 #line 80 ".//lexical.l"
-{ printf("Error type A at Line %d: Invalid FLOAT \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{ printf("Error type A at Line %d: Illegal floating point number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP

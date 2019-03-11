@@ -63,7 +63,7 @@ RC				\}
 {CHLINE}		{ yycolumn = 1; }
 {COMMENT}		{ }
 {COMMENT_LINE}	{ }
-{COMMENT_ERROR}	{ printf("Error type A at Line %d: Invalid comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{COMMENT_ERROR}	{ printf("Error type A at Line %d: Illegal comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {STRUCT}		{ yylval.node = create_node("STRUCT", yytext, STRUCT, yylloc.first_line); return STRUCT; }
 {RETURN}		{ yylval.node = create_node("RETURN", yytext, RETURN, yylloc.first_line); return RETURN; }
 {IF}			{ yylval.node = create_node("IF", yytext, IF, yylloc.first_line); return IF; }
@@ -73,11 +73,11 @@ RC				\}
 {OCTINT}		{ yylval.node = create_node("INT", yytext, INT, yylloc.first_line); yylval.node->int_type = 1; return INT; }
 {HEXINT}		{ yylval.node = create_node("INT", yytext, INT, yylloc.first_line); yylval.node->int_type = 2; return INT; }
 {INT}			{ yylval.node = create_node("INT", yytext, INT, yylloc.first_line); return INT; }
-{HEXINT_ERROR}	{ printf("Error type A at Line %d: Invalid Hex number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
-{OCTINT_ERROR}	{ printf("Error type A at Line %d: Invalid Oct number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{HEXINT_ERROR}	{ printf("Error type A at Line %d: Illegal hexadecimal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{OCTINT_ERROR}	{ printf("Error type A at Line %d: Illegal octal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {FLOAT}			{ yylval.node = create_node("FLOAT", yytext, FLOAT, yylloc.first_line); return FLOAT; }
 {FLOAT_E}		{ yylval.node = create_node("FLOAT", yytext, FLOAT, yylloc.first_line); return FLOAT; }
-{FLOAT_ERROR}	{ printf("Error type A at Line %d: Invalid FLOAT \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{FLOAT_ERROR}	{ printf("Error type A at Line %d: Illegal floating point number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {ID}			{ yylval.node = create_node("ID", yytext, ID, yylloc.first_line); return ID; }
 {SEMI} 			{ yylval.node = create_node("SEMI", yytext, SEMI, yylloc.first_line); return SEMI; }
 {COMMA}			{ yylval.node = create_node("COMMA", yytext, COMMA, yylloc.first_line); return COMMA; }
