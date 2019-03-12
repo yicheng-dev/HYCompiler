@@ -1,6 +1,2 @@
-Error type A at Line 7: Illegal comment '/*
-    comment
-    /*
-    nested comment
-    */'.
-Error type B at Line 8: syntax error.
+Error type B at Line 5: syntax error, unexpected COMMA.
+Error type B at Line 6: syntax error, unexpected ELSE.

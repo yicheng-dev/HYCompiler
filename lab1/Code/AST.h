@@ -80,13 +80,13 @@ void print_AST(AST_Node *node, int indent){
         printf("%s (%d)\n", node->name, node->row_index);
     }
     else{
-        if (node->token_type == INT)
+        if (strcmp(node->name, "INT") == 0)
             printf("%s: %d\n", node->name, str_to_int(node->value, node->int_type));
-        else if (node->token_type == FLOAT)
+        else if (strcmp(node->name, "FLOAT") == 0)
             printf("%s: %f\n", node->name, atof(node->value));
-        else if (node->token_type == ID)
+        else if (strcmp(node->name, "ID") == 0)
             printf("%s: %s\n", node->name, node->value);
-        else if (node->token_type == TYPE)
+        else if (strcmp(node->name, "TYPE") == 0)
             printf("%s: %s\n", node->name, node->value);
         else
             printf("%s\n", node->name);
