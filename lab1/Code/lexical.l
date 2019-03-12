@@ -33,9 +33,9 @@ OCTINT_ERROR	([+-]?0[0-9a-zA-Z]+)
 HEXINT			([+-]?0[Xx][0-9a-fA-F]+)
 HEXINT_ERROR	([+-]?0[Xx][0-9a-zA-Z]+)
 INT				([+-]?(0|[1-9][0-9]*))
-FLOAT			[+-]?([0-9]*\.?[0-9]+|[0-9]+\.?)
-FLOAT_E			{FLOAT}[Ee][+-]?[0-9]+
-FLOAT_ERROR		({FLOAT}[Ee][+-]?)|({FLOAT}[Ee][+-]?[0-9]*\.[0-9]*)
+FLOAT			[+-]?([0-9]*\.[0-9]+|[0-9]+\.)
+FLOAT_E			[+-]?([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?[0-9]+
+FLOAT_ERROR		([+-]?([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?)|([+-]?([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?[0-9]*\.[0-9]*)
 ID				[_a-zA-Z][_a-zA-Z0-9]*
 SEMI 			;
 COMMA			,
@@ -74,10 +74,10 @@ RC				\}
 {HEXINT}		{ yylval.node = create_node("INT", yytext, INT, yylloc.first_line); yylval.node->int_type = 2; return INT; }
 {INT}			{ yylval.node = create_node("INT", yytext, INT, yylloc.first_line); return INT; }
 {HEXINT_ERROR}	{ printf("Error type A at Line %d: Illegal hexadecimal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
-{OCTINT_ERROR}	{ printf("Error type A at Line %d: Illegal octal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {FLOAT}			{ yylval.node = create_node("FLOAT", yytext, FLOAT, yylloc.first_line); return FLOAT; }
 {FLOAT_E}		{ yylval.node = create_node("FLOAT", yytext, FLOAT, yylloc.first_line); return FLOAT; }
 {FLOAT_ERROR}	{ printf("Error type A at Line %d: Illegal floating point number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
+{OCTINT_ERROR}	{ printf("Error type A at Line %d: Illegal octal number \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {ID}			{ yylval.node = create_node("ID", yytext, ID, yylloc.first_line); return ID; }
 {SEMI} 			{ yylval.node = create_node("SEMI", yytext, SEMI, yylloc.first_line); return SEMI; }
 {COMMA}			{ yylval.node = create_node("COMMA", yytext, COMMA, yylloc.first_line); return COMMA; }
