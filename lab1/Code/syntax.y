@@ -54,7 +54,7 @@ ExtDefList : ExtDef ExtDefList { $$ = create_node("ExtDefList", "", -1, @$.first
 ExtDef : Specifier ExtDecList SEMI { $$ = create_node("ExtDef", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | Specifier SEMI { $$ = create_node("ExtDef", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
   | Specifier FunDec CompSt { $$ = create_node("ExtDef", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
-  | error SEMI { error_flag = 1; }
+  | error SEMI {}
   ;
 ExtDecList : VarDec { $$ = create_node("ExtDecList", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | VarDec COMMA ExtDecList { $$ = create_node("ExtDecList", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
@@ -66,7 +66,7 @@ Specifier : TYPE { $$ = create_node("Specifier", "", -1, @$.first_line); add_chi
   ;
 StructSpecifier : STRUCT OptTag LC DefList RC { $$ = create_node("StructSpecifier", "", -1, @$.first_line); add_child_sibling($$, 5, $1, $2, $3, $4, $5); }
   | STRUCT Tag { $$ = create_node("StructSpecifier", "", -1, @$.first_line); add_child_sibling($$, 2 , $1, $2); }
-  | STRUCT OptTag LC error RC { error_flag = 1; }
+  | STRUCT OptTag LC error RC {}
   ;
 OptTag : ID { $$ = create_node("OptTag", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | { $$ = create_node("OptTag", "", -1, @$.first_line); }
@@ -77,21 +77,23 @@ Tag : ID { $$ = create_node("Tag", "", -1, @$.first_line); add_child_sibling($$,
 /* Declarators */
 VarDec : ID { $$ = create_node("VarDec", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | VarDec LB INT RB { $$ = create_node("VarDec", "", -1, @$.first_line); add_child_sibling($$, 4, $1, $2, $3, $4); }
-//  | varDec LB error RB { error_flag = 1; }
+  | error RB {}
   ;
 FunDec : ID LP VarList RP { $$ = create_node("FunDec", "", -1, @$.first_line); add_child_sibling($$, 4, $1, $2, $3, $4); }
   | ID LP RP { $$ = create_node("FunDec", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
-  | ID LP error RP { error_flag = 1; }
+  | ID LP error RP {}
   ;
 VarList : ParamDec COMMA VarList { $$ = create_node("VarList", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | ParamDec { $$ = create_node("VarList", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   ;
 ParamDec : Specifier VarDec { $$ = create_node("ParamDec", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
+  | error RP {}
+  | error SEMI {}
   ;
 
 /* Statements */
 CompSt : LC DefList StmtList RC { $$ = create_node("CompSt", "", -1, @$.first_line); add_child_sibling($$, 4, $1, $2, $3, $4); }
-  | LC error RC { error_flag = 1; } /* shift/reduce */
+  | LC error RC {} /* shift/reduce */
   ;
 StmtList : Stmt StmtList { $$ = create_node("StmtList", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
   | { $$ = create_node("StmtList", "", -1, @$.first_line); }
@@ -99,10 +101,12 @@ StmtList : Stmt StmtList { $$ = create_node("StmtList", "", -1, @$.first_line); 
 Stmt : Exp SEMI { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
   | CompSt { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | RETURN Exp SEMI { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
+  | RETURN error SEMI {}
   | IF LP Exp RP Stmt %prec LOWER_THAN_ELSE { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 5, $1, $2, $3, $4, $5); }
+  | IF LP error RP Stmt %prec LOWER_THAN_ELSE {}
   | IF LP Exp RP Stmt ELSE Stmt { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 7, $1, $2, $3, $4, $5, $6, $7); }
   | WHILE LP Exp RP Stmt { $$ = create_node("Stmt", "", -1, @$.first_line); add_child_sibling($$, 5, $1, $2, $3, $4, $5); }
-//  | error SEMI { error_flag = 1; }
+  | WHILE LP error RP Stmt {}
   ;
 
 /* Local Definitions */
@@ -110,7 +114,7 @@ DefList : Def DefList { $$ = create_node("DefList", "", -1, @$.first_line); add_
   | { $$ = create_node("DefList", "", -1, @$.first_line); }
   ;
 Def : Specifier DecList SEMI { $$ = create_node("Def", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
-  | error SEMI { error_flag = 1; }
+  | error SEMI {}
   ;
 DecList : Dec { $$ = create_node("DecList", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | Dec COMMA DecList { $$ = create_node("DecList", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
@@ -129,20 +133,20 @@ Exp : Exp ASSIGNOP Exp { $$ = create_node("Exp", "", -1, @$.first_line); add_chi
   | Exp STAR Exp { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | Exp DIV Exp { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | LP Exp RP { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
-  | LP error RP { error_flag = 1; }
+  | LP error RP {}
   | MINUS Exp { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
   | NOT Exp { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 2, $1, $2); }
   | ID LP Args RP { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 4, $1, $2, $3, $4); }
   | ID LP RP { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
-  | ID LP error RP { error_flag = 1; }
+  | ID LP error RP {}
   | Exp LB Exp RB { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 4, $1, $2, $3, $4); }
-  | Exp LB error RB { error_flag = 1; }
+  | Exp LB error RB {}
   | Exp DOT ID { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | ID { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | INT { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
   | FLOAT { $$ = create_node("Exp", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
-//  | error RP { error_flag = 1; }
-//  | error RB { error_flag = 1; }
+//  | error RP {}
+//  | error RB {}
   ;
 Args : Exp COMMA Args { $$ = create_node("Args", "", -1, @$.first_line); add_child_sibling($$, 3, $1, $2, $3); }
   | Exp { $$ = create_node("Args", "", -1, @$.first_line); add_child_sibling($$, 1, $1); }
