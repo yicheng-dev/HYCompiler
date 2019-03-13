@@ -2,6 +2,7 @@
   #include "syntax.tab.h"
   #include <stdio.h>
   #include "AST.h"
+  #include "utils.h"
 
   FILE *in;
   int yydebug = 1;
@@ -62,11 +63,11 @@ RC				\}
 
 {SPACE}			{ }
 {CHLINE}		{ yycolumn = 1; }
-{COMMENT}		{ }
+{COMMENT}		{ update_column(yytext); }
 {COMMENT_LINE}  { }
 {STRUCT}		{ yylval.node = create_node("STRUCT", yytext, STRUCT, yylloc.first_line); return STRUCT; }
 {RETURN}		{ yylval.node = create_node("RETURN", yytext, RETURN, yylloc.first_line); return RETURN; }
-{IF}			{ yylval.node = create_node("IF", yytext, IF, yylloc.first_line); return IF; }
+{IF}			  { yylval.node = create_node("IF", yytext, IF, yylloc.first_line); return IF; }
 {ELSE}			{ yylval.node = create_node("ELSE", yytext, ELSE, yylloc.first_line); return ELSE; }
 {WHILE}			{ yylval.node = create_node("WHILE", yytext, WHILE, yylloc.first_line); return WHILE; }
 {TYPE}			{ yylval.node = create_node("TYPE", yytext, TYPE, yylloc.first_line); return TYPE; }
