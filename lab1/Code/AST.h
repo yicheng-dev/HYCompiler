@@ -39,8 +39,8 @@ AST_Node *create_node(char *name, char *value, int token_type, int lineno){
     node->row_index = lineno;
     node->token_type = token_type;
     node->term_type = token_type == -1 ? 1 : 0;
-    /*printf("name: %s\tvalue: %s\trow_index: %d\ttoken_type: %d\tterm_type: %d\n", 
-        node->name, node->value, node->row_index, node->token_type, node->term_type);*/
+    // printf("name: %s\tvalue: %s\trow_index: %d\ttoken_type: %d\tterm_type: %d\n", 
+    //     node->name, node->value, node->row_index, node->token_type, node->term_type);
     return node;
 }
 
