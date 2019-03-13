@@ -15,4 +15,4 @@ Our language is so-called `C--`, which is a subset of `C`. You can refer to `Cod
 
 ## License
 
-BSD
+BSD 3-Clause License
