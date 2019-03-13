@@ -7,6 +7,10 @@
 #include <stdio.h>
 
 extern int yylineno;
+extern int empty_flag;
+
+int yylex();
+int yyerror(char *msg);
 
 typedef struct AST_Node
 {
@@ -72,6 +76,10 @@ void add_child_sibling(AST_Node *parent, const int count,  ...){
 void print_AST(AST_Node *node, int indent){
     if (!node)
         return;
+    if (empty_flag == 1){
+        printf("Empty file!\n");
+        return;
+    }
     if (node->term_type == 1 && !node->first_child)
         return;
     for (int i = 0; i < indent; i++){

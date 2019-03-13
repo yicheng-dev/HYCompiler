@@ -2,10 +2,12 @@
   #include "syntax.tab.h"
   #include <stdio.h>
   #include "AST.h"
+
   FILE *in;
-  yydebug = 1;
+  int yydebug = 1;
   int error_flag = 0;
   AST_Node *root;
+  int empty_flag = 1;
 
   int yycolumn = 1;
   extern YYLTYPE yylloc;
@@ -98,6 +100,7 @@ RC				\}
 .				{ printf("Error type A at Line %d: Mysterious characters \"%s\".\n", yylineno, yytext); error_flag = 1; }
 
 %%
+
 
 int main(int argc, char **argv) {
   if (argc > 1){
