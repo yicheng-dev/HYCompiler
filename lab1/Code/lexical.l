@@ -35,8 +35,8 @@ HEXINT			(0[Xx][0-9a-fA-F]+)
 HEXINT_ERROR	(0[Xx][0-9a-zA-Z]+)
 INT				((0|[1-9][0-9]*))
 FLOAT			([0-9]*\.[0-9]+|[0-9]+\.)
-FLOAT_E			([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?[0-9]+
-FLOAT_ERROR		(([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?)|([+-]?([0-9]*\.?[0-9]+|[0-9]+\.?)[Ee][+-]?[0-9]*\.[0-9]*)
+FLOAT_E			{FLOAT}[Ee][+-]?[0-9]+
+FLOAT_ERROR		({FLOAT}[Ee][+-]?)|({FLOAT}[Ee][+-]?[0-9]*\.[0-9]*)
 ID				[_a-zA-Z][_a-zA-Z0-9]*
 SEMI 			;
 COMMA			,
@@ -63,7 +63,7 @@ RC				\}
 {SPACE}			{ }
 {CHLINE}		{ yycolumn = 1; }
 {COMMENT}		{ }
-{COMMENT_LINE}	{ }
+{COMMENT_LINE}  { }
 {STRUCT}		{ yylval.node = create_node("STRUCT", yytext, STRUCT, yylloc.first_line); return STRUCT; }
 {RETURN}		{ yylval.node = create_node("RETURN", yytext, RETURN, yylloc.first_line); return RETURN; }
 {IF}			{ yylval.node = create_node("IF", yytext, IF, yylloc.first_line); return IF; }
