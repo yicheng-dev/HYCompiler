@@ -20,8 +20,7 @@
 SPACE			[ \t]+
 CHLINE			\n+
 COMMENT_LINE	"//"[^\n]*
-COMMENT			"/*"([^*]*|[^/]*|.*\*[^/]*)"*/"
-COMMENT_ERROR	"/*"[^"/*"]*"/*".*"*/"[^"*/"]*"*/"
+COMMENT			"/""*"*(([^\*]*(\*[^\/])?)*)"*"*"*/"
 STRUCT			struct
 RETURN			return
 IF				if
@@ -63,7 +62,6 @@ RC				\}
 {CHLINE}		{ yycolumn = 1; }
 {COMMENT}		{ }
 {COMMENT_LINE}	{ }
-{COMMENT_ERROR}	{ printf("Error type A at Line %d: Illegal comment \'%s\'.\n", yylineno, yytext); error_flag = 1; }
 {STRUCT}		{ yylval.node = create_node("STRUCT", yytext, STRUCT, yylloc.first_line); return STRUCT; }
 {RETURN}		{ yylval.node = create_node("RETURN", yytext, RETURN, yylloc.first_line); return RETURN; }
 {IF}			{ yylval.node = create_node("IF", yytext, IF, yylloc.first_line); return IF; }
