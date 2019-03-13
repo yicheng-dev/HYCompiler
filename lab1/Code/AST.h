@@ -7,7 +7,9 @@
 #include <stdio.h>
 
 int yylex();
-int yyerror(char *msg);
+void yyrestart(FILE*);
+int yyparse();
+int yyerror(char*);
 
 typedef struct AST_Node
 {
