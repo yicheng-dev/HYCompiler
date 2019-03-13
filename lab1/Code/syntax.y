@@ -1,15 +1,15 @@
 %{
-  #include <stdio.h>
-  #include "AST.h"
-  #define YYERROR_VERBOSE
-  //#define YYDEBUG 1
-  extern AST_Node *root;
-  extern int error_flag;
-  extern int empty_flag;
+    #include <stdio.h>
+    #include "AST.h"
+    #define YYERROR_VERBOSE
+    //#define YYDEBUG 1
+    extern AST_Node *root;
+    extern int error_flag;
+    extern int empty_flag;
 %}
 
 %union{
-  AST_Node *node;
+    AST_Node *node;
 }
 
 /* tokens */
@@ -357,7 +357,7 @@ Args :
 #include "lex.yy.c"
 
 int yyerror(char *msg){
-  error_flag = 1;
-  printf("Error type B at Line %d: %s.\n", yylineno, msg);
-  return 0;
+    error_flag = 1;
+    printf("Error type B at Line %d: %s.\n", yylineno, msg);
+    return 0;
 }
