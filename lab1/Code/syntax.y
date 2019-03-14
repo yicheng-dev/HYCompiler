@@ -38,7 +38,7 @@
 %left   RELOP
 %left   PLUS MINUS
 %left   STAR DIV
-%right  NOT
+%right  NOT UMINUS
 %left   DOT LP RP LB RB
 
 %nonassoc LOWER_THAN_ELSE
@@ -301,7 +301,7 @@ Exp :
   }
   | LP error RP {
   }
-  | MINUS Exp { 
+  | MINUS Exp %prec UMINUS{ 
     $$ = create_node("Exp", "", -1, @$.first_line); 
     add_child_sibling($$, 2, $1, $2); 
   }
