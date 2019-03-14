@@ -23,7 +23,7 @@
 SPACE			[ \t]+
 CHLINE			\n+
 COMMENT_LINE	"//"[^\n]*
-COMMENT			"/""*"*(([^\*]*(\*[^\/])?)*)"*"*"*/"
+COMMENT			"/*"([^*]*"*"+[^*/])*[^*]*"*"+"/"
 STRUCT			struct
 RETURN			return
 IF				if

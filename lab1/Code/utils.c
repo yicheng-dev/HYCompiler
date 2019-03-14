@@ -1,3 +1,5 @@
+#include "utils.h"
+
 extern int yycolumn;
 
 void update_column(char *text){
