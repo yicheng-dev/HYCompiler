@@ -27,17 +27,12 @@ AST_Node *create_node(char *name, char *value, int token_type, int lineno){
 }
 
 void add_child_sibling(AST_Node *parent, const int count,  ...){
-    /*printf("Parent --- name: %s\tvalue: %s\trow_index: %d\ttoken_type: %d\tterm_type: %d\n", 
-        parent->name, parent->value, parent->row_index, parent->token_type, parent->term_type);*/
     va_list ap;
     int i;
     va_start(ap, count);
     AST_Node *last_node;
-    //printf("count: %d\n", count);
     for (i = 0; i < count; i++){
         AST_Node *node = va_arg(ap, AST_Node*);
-        /*printf("children --- name: %s\tvalue: %s\trow_index: %d\ttoken_type: %d\tterm_type: %d\n", 
-            node->name, node->value, node->row_index, node->token_type, node->term_type);*/
         node->parent = parent;
         if (i == 0){
             parent->first_child = node;

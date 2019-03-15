@@ -138,7 +138,7 @@ VarDec :
     $$ = create_node("VarDec", "", -1, @$.first_line); 
     add_child_sibling($$, 4, $1, $2, $3, $4); 
   }
-  | error RB {
+  | VarDec LB error RB {
   };
 
 FunDec : 
