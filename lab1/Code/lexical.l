@@ -5,7 +5,7 @@
   #include "utils.h"
 
   FILE *in;
-  int yydebug = 1;
+  int yydebug = 0;
   int error_flag = 0;
   AST_Node *root;
   int empty_flag = 1;
