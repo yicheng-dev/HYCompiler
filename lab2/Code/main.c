@@ -16,8 +16,8 @@ int main(int argc, char **argv) {
     root = malloc(sizeof(AST_Node));
 	  yyparse();
     if (error_flag == 0){
-        print_AST(root, 0);
-		semantics_analysis();
+        //print_AST(root, 0);
+		semantics_analysis(root);
     }
 	  return 0;
 }

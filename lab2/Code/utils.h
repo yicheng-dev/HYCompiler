@@ -6,5 +6,6 @@
 #include <string.h>
 
 void update_column(char *text);
+unsigned hash_pjw(char *name);
 
 #endif

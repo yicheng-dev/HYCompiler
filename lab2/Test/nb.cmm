@@ -1,1 +1,1 @@
-int func(int a, float b);
+struct fuck {} hahaha[20];

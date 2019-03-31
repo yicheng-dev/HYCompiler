@@ -19,3 +19,14 @@ void update_column(char *text){
         }
     }
 }
+
+unsigned hash_pjw(char *name){
+    unsigned val = 0, i;
+    while(*name){
+        val = (val << 2) + *name;
+        i = val & ~0x3fff;
+        if (i)
+            val = (val ^ (i >> 12)) & 0x3fff;
+    }
+    return val;
+}
