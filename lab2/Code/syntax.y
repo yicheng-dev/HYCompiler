@@ -77,6 +77,10 @@ ExtDef :
     $$ = create_node("ExtDef", "", -1, @$.first_line); 
     add_child_sibling($$, 3, $1, $2, $3); 
   }
+  | Specifier FunDec SEMI {
+    $$ = create_node("ExtDef", "", -1, @$.first_line);
+    add_child_sibling($$, 3, $1, $2, $3);
+  } /* Declaration of function */
   | error SEMI {
   };
 

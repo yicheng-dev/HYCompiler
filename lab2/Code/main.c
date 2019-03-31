@@ -1,4 +1,5 @@
 #include "AST.h"
+#include "semantics.h"
 
 extern FILE *in;
 extern AST_Node *root;
@@ -16,6 +17,7 @@ int main(int argc, char **argv) {
 	  yyparse();
     if (error_flag == 0){
         print_AST(root, 0);
+		semantics_analysis();
     }
 	  return 0;
 }
