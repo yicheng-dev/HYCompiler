@@ -1,0 +1,32 @@
+struct Student {
+  int score[20];
+  int age;
+  float weight;
+  struct School school;
+};
+
+int func(struct Student s){
+  float sum = 0.;
+  if (s.age >= 18)
+    sum = sum + 1.23;
+  else if (s.age >14)
+    sum=sum*.3;
+  else if (s.weight== 114.514||s.age!=24)
+    sum= sum / 7;
+  else
+    sum= sum  - 0.000;
+  
+  return 1;
+}
+
+int main() {
+  
+  int a = 0x7F2;
+  float b = -.9;
+  int c=0765;
+  int d=88;
+  float e=-1.34E-09;
+  float f = .034e9;
+  float g = 9.8E01;
+  return 0;
+}

@@ -1,0 +1,36 @@
+struct Student {
+  char name[100];
+  int age;
+  double weight;
+  struct School school;
+};
+
+void func(struct Student s){
+  double sum = 0.;
+  if (s.age >= 18)
+    sum += 1.23;
+  else if (s.age >14)
+    sum=sum*.3;
+  else if (s.weight== 114.514||s.age!=24)
+    sum/=7;
+  else
+    sum= sum  - 0.000;
+  
+  return;
+}
+// 233333
+/* hahaha 
+??? */
+
+int main() {
+  
+  int a = 0x7F2;
+  double b = -.9;
+  int c=0765;
+  int d=088;
+  double e=-1.34E-09;
+  double f = .034e8.9;
+  double g = 9.E+;
+  return 0;
+}
+/*/* 5555 */233*/

@@ -1,0 +1,4 @@
+int func(){
+
+ int a = 0x3G;
+}
