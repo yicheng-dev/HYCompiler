@@ -3,6 +3,10 @@
 
 #define MAX_NAME_LEN 128
 #define MAX_HASH_TABLE_LEN 16384
+#define BASIC_INT 1
+#define BASIC_FLOAT 2
+#define MAX_ERROR_INFO_LEN 64
+
 #include "AST.h"
 
 struct Type {
@@ -21,18 +25,9 @@ struct Type {
 
 struct Field_List {
     char name[MAX_NAME_LEN];
-    struct Type type;
+    struct Type *type;
     struct Field_List *next;
-};
-
-struct Var {
-    char name[MAX_NAME_LEN];
-    struct Type type;
-    union{
-        int int_val;
-        float float_val;
-    } val;
-    struct Var *next_param; /* if the variable is a parameter of a function */
+    int wrapped_layer;
 };
 
 struct Func {
@@ -43,11 +38,18 @@ struct Func {
     struct Var *first_param;
 };
 
-typedef struct Var Var;
+struct Sem_Error_List {
+    int type;
+    int line_num;
+    char info[MAX_ERROR_INFO_LEN];
+    struct Sem_Error_List *next;
+};
+
+
 typedef struct Func Func;
 typedef struct Type Type;
 typedef struct Field_List Field_List;
-
+typedef struct Sem_Error_List Error_List;
 
 /* The entry function of semantics analysis */
 void semantics_analysis(AST_Node *root);
@@ -63,5 +65,18 @@ void sem_ext_dec_list(AST_Node *, Type *);
 
 /* semantics of Specifiers */
 Type* sem_specifier(AST_Node *);
+Type* sem_struct_specifier(AST_Node *);
+
+/* semantics of Declarators */
+void sem_var_dec(AST_Node *, Type *);
+
+
+
+/* helper functions */
+void insert_field_hash_table(unsigned, Type *, AST_Node *, int);
+
+/* error report list */
+void add_error_list(int, char *, int);
+void print_error_list();
 
 #endif

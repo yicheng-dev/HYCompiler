@@ -24,9 +24,10 @@ unsigned hash_pjw(char *name){
     unsigned val = 0, i;
     while(*name){
         val = (val << 2) + *name;
-        i = val & ~0x3fff;
+        int i = val & ~0x3ff;
         if (i)
             val = (val ^ (i >> 12)) & 0x3fff;
+        name ++;
     }
     return val;
 }

@@ -18,6 +18,8 @@ int main(int argc, char **argv) {
     if (error_flag == 0){
         //print_AST(root, 0);
 		semantics_analysis(root);
+		if (error_flag)
+			print_error_list();
     }
 	  return 0;
 }
