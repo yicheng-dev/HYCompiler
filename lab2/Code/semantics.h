@@ -6,6 +6,7 @@
 #define BASIC_INT 1
 #define BASIC_FLOAT 2
 #define MAX_ERROR_INFO_LEN 64
+#define MAX_FIELD_NUM 256
 
 #include "AST.h"
 
@@ -21,6 +22,8 @@ struct Type {
         } array;
         struct Field_List *structure;
     } u;
+    struct Type *next; // multiple return type in a CompSt
+    int line_num; // multiple return type in a CompSt
 };
 
 struct Field_List {
@@ -28,14 +31,17 @@ struct Field_List {
     struct Type *type;
     struct Field_List *next;
     int wrapped_layer;
+    int is_structure;
+    int line_num;
 };
 
 struct Func {
     char name[MAX_NAME_LEN];
-    struct Type return_type;
+    struct Type *return_type;
     int defined;
     int param_size;
-    struct Var *first_param;
+    struct Field_List *first_param;
+    int line_num;
 };
 
 struct Sem_Error_List {
@@ -64,16 +70,41 @@ void sem_ext_def(AST_Node *);
 void sem_ext_dec_list(AST_Node *, Type *);
 
 /* semantics of Specifiers */
-Type* sem_specifier(AST_Node *);
-Type* sem_struct_specifier(AST_Node *);
+Type* sem_specifier(AST_Node *, int);
+Type* sem_struct_specifier(AST_Node *, int);
 
 /* semantics of Declarators */
-void sem_var_dec(AST_Node *, Type *);
+Field_List *sem_var_dec(AST_Node *, Type *, int, int);
+Func *sem_fun_dec(AST_Node *);
+Field_List *sem_var_list(AST_Node *);
+Field_List *sem_param_dec(AST_Node *);
 
+/* semantics of Statements */
+void sem_comp_st(AST_Node *, int);
+void sem_stmt_list(AST_Node *, int);
+void sem_stmt(AST_Node *, int);
 
+/* semantics of Local Definitions */
+Field_List *sem_def_list(AST_Node *, int, int);
+Field_List *sem_def(AST_Node *, int, int);
+Field_List *sem_dec_list(AST_Node *, Type *, int, int);
+Field_List *sem_dec(AST_Node *, Type *, int, int);
+
+/* semantics of expressions */
+Type *sem_exp(AST_Node *);
+Type *sem_args(AST_Node *);
 
 /* helper functions */
-void insert_field_hash_table(unsigned, Type *, AST_Node *, int);
+Field_List *insert_field_hash_table(unsigned, Type *, AST_Node *, int, int);
+Field_List *query_field_hash_table(unsigned, AST_Node *, int);
+Func *insert_func_hash_table(unsigned, Type *, Func *);
+Func *query_func_hash_table(unsigned);
+Func *insert_func_dec_hash_table(unsigned, Type *, Func *);
+int check_equal_type(Type *, Type *);
+int check_duplicate_field(Type *);
+int check_equal_params(Field_List *, Type *);
+int check_twofunc_equal_params(Field_List *, Field_List *);
+void check_undec_func();
 
 /* error report list */
 void add_error_list(int, char *, int);

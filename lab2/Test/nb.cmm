@@ -1,5 +1,4 @@
-int a;
-int b;
-float c;
-float b;
-int c;
+struct b{
+    int a, c, a;
+    float t;
+} a;
