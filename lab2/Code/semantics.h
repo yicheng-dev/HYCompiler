@@ -105,6 +105,7 @@ int check_duplicate_field(Type *);
 int check_equal_params(Field_List *, Type *);
 int check_twofunc_equal_params(Field_List *, Field_List *);
 void check_undec_func();
+void pop_local_var(int);
 
 /* error report list */
 void add_error_list(int, char *, int);

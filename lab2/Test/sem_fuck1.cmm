@@ -1,0 +1,7 @@
+struct  a{
+    int i;
+};
+int f(struct a k);
+int f(struct {int i;} b) {
+    return b.i;
+}

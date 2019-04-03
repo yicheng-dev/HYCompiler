@@ -1,0 +1,1 @@
+struct b{int i;} f(struct b{int i;} a){}

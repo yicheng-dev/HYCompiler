@@ -67,6 +67,7 @@ void sem_ext_def(AST_Node *node){
             }
             unsigned hash_index = hash_pjw(func->name);
             insert_func_hash_table(hash_index, type, func);
+            pop_local_var(1);
         }
         else{ // Declaration of functions
             assert(strcmp(node->first_child->sibling->sibling->name, "SEMI") == 0);
@@ -75,6 +76,7 @@ void sem_ext_def(AST_Node *node){
                 return;
             unsigned hash_index = hash_pjw(func->name);
             insert_func_dec_hash_table(hash_index, type, func);
+            pop_local_var(1);
         }
     }
 }
@@ -196,7 +198,7 @@ Field_List *sem_var_list(AST_Node *node){
 
 Field_List *sem_param_dec(AST_Node *node){
     assert(node && node->first_child && node->first_child->sibling);
-    Type *type = sem_specifier(node->first_child, 0);
+    Type *type = sem_specifier(node->first_child, 1);
     return sem_var_dec(node->first_child->sibling, type, 0, 1);
 }
 
@@ -219,6 +221,7 @@ void sem_stmt(AST_Node *node, int wrapped_layer){
     assert(node && node->first_child);
     if (strcmp(node->first_child->name, "CompSt") == 0){
         sem_comp_st(node->first_child, wrapped_layer + 1);
+        pop_local_var(wrapped_layer + 1);
     }
     if (strcmp(node->first_child->name, "Exp") == 0){
         sem_exp(node->first_child);
@@ -693,6 +696,19 @@ void check_undec_func(){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Undefined function '%s'.\n", func_hash[i]->name);
             add_error_list(18, info, func_hash[i]->line_num);
+        }
+    }
+}
+
+void pop_local_var(int wrapped_layer){
+    int i;
+    for (i = 0; i < MAX_HASH_TABLE_LEN; i ++){
+        if (var_hash[i] && var_hash[i]->wrapped_layer == wrapped_layer){
+            Field_List *new_head = var_hash[i]->next;
+            if (new_head)
+                var_hash[i] = new_head;
+            else
+                var_hash[i] = NULL;
         }
     }
 }

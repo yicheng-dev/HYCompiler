@@ -1,0 +1,8 @@
+struct b{
+    float t;
+};
+
+int a(struct b{int i;} d){
+    struct b a;
+    return d.i;
+}

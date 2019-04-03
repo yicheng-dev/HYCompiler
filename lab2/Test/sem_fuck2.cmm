@@ -1,0 +1,4 @@
+int a (struct b{int i;} d) {
+    int b;
+    return d.i;
+}
