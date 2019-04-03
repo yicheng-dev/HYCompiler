@@ -42,7 +42,7 @@ void sem_ext_def(AST_Node *node){
         sem_ext_dec_list(node->first_child->sibling, type); // set type to decList
     else if (strcmp(node->first_child->sibling->name, "SEMI") == 0){
         // Definition of structure
-        if (!type){ // struct a; ('a' hasn't been defined)
+        if (!type && strcmp(node->first_child->first_child->first_child->sibling->name, "Tag") == 0){ // struct a; ('a' hasn't been defined)
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "structure '%s' hasn't been defined.\n", node->first_child->first_child->first_child->sibling->first_child->value);
             add_error_list(17, info, node->first_child->first_child->first_child->sibling->first_child->row_index);
