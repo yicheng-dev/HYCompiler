@@ -1,9 +1,17 @@
 struct b{
-   int a[20][2]; 
+   struct {
+       int fuck;
+   } a;
+   float d;
 } c;
 
 struct{
-    int b[1][1];
+    int a;
+    struct{
+        struct{
+            float t;
+        } b;
+    } c;
 } d;
 
 int main()

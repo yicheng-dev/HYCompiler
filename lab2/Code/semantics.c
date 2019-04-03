@@ -637,6 +637,12 @@ int check_equal_type(Type *type1, Type *type2){
         }
         return check_equal_type(type11, type22);
     }
+    if (type1->kind == STRUCTURE)
+        if (type1->u.structure)
+            return check_equal_type(type1->u.structure->type, type2);
+    if (type2->kind == STRUCTURE)
+        if (type2->u.structure)
+            return check_equal_type(type2->u.structure->type, type1);
     return 0;
 }
 
