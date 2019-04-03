@@ -1,0 +1,10 @@
+struct {
+    struct{} c;
+} a;
+struct {
+    struct{} c;
+} b;
+int main()
+{
+    a = b;
+}

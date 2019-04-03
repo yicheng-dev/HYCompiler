@@ -1,6 +1,6 @@
-struct { struct {int i; } a;} a; 
+struct {struct{int i;} b; float c;} a; 
 struct{int i;} b;
 
 int main(){
-    a == b;
+    a = b;
 }

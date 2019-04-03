@@ -5,6 +5,8 @@
 
 Field_List *var_hash[MAX_HASH_TABLE_LEN];
 Func *func_hash[MAX_HASH_TABLE_LEN];
+//Field_List *struct_list[MAX_HASH_TABLE_LEN];
+//int struct_list_num = 0;
 Error_List *error_head = NULL;
 extern int error_flag;
 Type *return_type_list = NULL;
@@ -36,7 +38,7 @@ void sem_ext_def_list(AST_Node *node){
 
 void sem_ext_def(AST_Node *node){
     assert(node);
-    Type *type = sem_specifier(node->first_child, 0); // get type from specifier
+    Type *type = sem_specifier(node->first_child, 0, 0); // get type from specifier
     if (strcmp(node->first_child->sibling->name, "ExtDecList") == 0)
         // usage of structure or TYPE
         sem_ext_dec_list(node->first_child->sibling, type); // set type to decList
@@ -88,7 +90,7 @@ void sem_ext_dec_list(AST_Node *node, Type *type){
         sem_ext_dec_list(node->first_child->sibling->sibling, type);
 }
 
-Type* sem_specifier(AST_Node *node, int wrapped_layer){
+Type* sem_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     assert(node);
     if (strcmp(node->first_child->name, "TYPE") == 0){
         Type *type = (Type *)malloc(sizeof(Type));
@@ -100,10 +102,10 @@ Type* sem_specifier(AST_Node *node, int wrapped_layer){
         return type;
     }
     assert(strcmp(node->first_child->name, "StructSpecifier") == 0);
-    return sem_struct_specifier(node->first_child, wrapped_layer);
+    return sem_struct_specifier(node->first_child, wrapped_layer, in_structure);
 }
 
-Type* sem_struct_specifier(AST_Node *node, int wrapped_layer){
+Type* sem_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     assert(node && node->first_child && strcmp(node->first_child->name, "STRUCT") == 0);
     if (strcmp(node->first_child->sibling->name, "Tag") == 0){
         AST_Node *tag_node = node->first_child->sibling->first_child;
@@ -117,9 +119,11 @@ Type* sem_struct_specifier(AST_Node *node, int wrapped_layer){
     Type *structure_type = (Type *)malloc(sizeof(Type));
     structure_type->kind = STRUCTURE;
     structure_type->u.structure = sem_def_list(node->first_child->sibling->sibling->sibling, 1, wrapped_layer);
+    structure_type->line_num = node->first_child->sibling->sibling->sibling->row_index;
     if (!check_duplicate_field(structure_type)){
         return NULL;
     }
+    //insert_struct_list(structure_type, wrapped_layer);
     if (node->first_child->sibling->first_child){
         unsigned hash_index = hash_pjw(node->first_child->sibling->first_child->value);
         insert_field_hash_table(hash_index, structure_type, node->first_child->sibling->first_child, wrapped_layer, 1);
@@ -198,7 +202,7 @@ Field_List *sem_var_list(AST_Node *node){
 
 Field_List *sem_param_dec(AST_Node *node){
     assert(node && node->first_child && node->first_child->sibling);
-    Type *type = sem_specifier(node->first_child, 1);
+    Type *type = sem_specifier(node->first_child, 1, 0);
     return sem_var_dec(node->first_child->sibling, type, 0, 1);
 }
 
@@ -272,7 +276,7 @@ Field_List *sem_def_list(AST_Node *node, int in_structure, int wrapped_layer){
 
 Field_List *sem_def(AST_Node *node, int in_structure, int wrapped_layer){
     assert(node);
-    Type *type = sem_specifier(node->first_child, wrapped_layer);
+    Type *type = sem_specifier(node->first_child, wrapped_layer, in_structure);
     return sem_dec_list(node->first_child->sibling, type, in_structure, wrapped_layer);
 }
 
@@ -342,7 +346,7 @@ Type *sem_exp(AST_Node *node){
             }
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Type mismatched for assignment.\n");
-            add_error_list(7, info, node->first_child->sibling->row_index);
+            add_error_list(5, info, node->first_child->sibling->row_index);
             return NULL;
         }
         else if (strcmp(node->first_child->sibling->name, "AND") == 0
@@ -462,11 +466,20 @@ Type *sem_exp(AST_Node *node){
         }
         unsigned hash_index = hash_pjw(node->first_child->value);
         Func *func = query_func_hash_table(hash_index);
+        Field_List *var = query_field_hash_table(hash_index, NULL, 0);
         if (!func || func->defined == 0){
-            char info[MAX_ERROR_INFO_LEN];
-            sprintf(info, "'%s' is not a function.\n", node->first_child->value);
-            add_error_list(11, info, node->first_child->sibling->row_index);
-            return NULL;
+            if (var){
+                char info[MAX_ERROR_INFO_LEN];
+                sprintf(info, "'%s' is not a function.\n", node->first_child->value);
+                add_error_list(11, info, node->first_child->sibling->row_index);
+                return NULL;
+            }
+            else{
+                char info[MAX_ERROR_INFO_LEN];
+                sprintf(info, "Undefined function '%s'\n", node->first_child->value);
+                add_error_list(2, info, node->first_child->sibling->row_index);
+                return NULL;
+            }
         }
         if (strcmp(node->first_child->sibling->sibling->name, "Args") == 0){
             Type *true_params_type = sem_args(node->first_child->sibling->sibling);
@@ -611,6 +624,8 @@ int check_equal_type(Type *type1, Type *type2){
         return 0;
     }
     if (type1->kind == STRUCTURE && type2->kind == STRUCTURE){
+        return check_struct_equal_type(type1, type2);
+        /*
         Field_List *field1 = type1->u.structure;
         Field_List *field2 = type2->u.structure;
         while (field1 && field2){
@@ -628,7 +643,7 @@ int check_equal_type(Type *type1, Type *type2){
             }
             return 0;
         }
-        return 1;
+        return 1;*/
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){
         Type *type11 = type1->u.array.elem;
@@ -642,13 +657,25 @@ int check_equal_type(Type *type1, Type *type2){
         }
         return check_equal_type(type11, type22);
     }
-    if (type1->kind == STRUCTURE)
-        if (type1->u.structure)
-            return check_equal_type(type1->u.structure->type, type2);
-    if (type2->kind == STRUCTURE)
-        if (type2->u.structure)
-            return check_equal_type(type2->u.structure->type, type1);
     return 0;
+}
+
+int check_struct_equal_type(Type *type1, Type *type2){
+    Type *type_list1 = struct_type_to_list(type1, type1->u.structure);
+    Type *type_list2 = struct_type_to_list(type2, type2->u.structure);
+    Type *cur1 = type_list1;
+    Type *cur2 = type_list2;
+    while (cur1 && cur2){
+        assert(cur1->kind != STRUCTURE && cur2->kind != STRUCTURE);
+        if (!check_equal_type(cur1, cur2))
+            return 0;
+        cur1 = cur1->next_flat;
+        cur2 = cur2->next_flat;
+    }
+    if (cur1 || cur2){
+        return 0;
+    }
+    return 1;
 }
 
 int check_duplicate_field(Type *structure_type){
@@ -736,6 +763,42 @@ void pop_local_var(int wrapped_layer){
         }
     }
 }
+
+Type *struct_type_to_list(Type *type, Field_List *cur_field){
+    if (!cur_field){
+        return NULL;
+    }
+    Type *flat_type_list = NULL;
+    if (cur_field->type->kind != STRUCTURE){
+        flat_type_list = cur_field->type;
+    }
+    else{
+        flat_type_list = struct_type_to_list(cur_field->type, cur_field->type->u.structure);
+    }
+    if (flat_type_list){
+        Type *tail = flat_type_list;
+        while (tail && tail->next_flat)
+            tail = tail->next_flat;
+        tail->next_flat = struct_type_to_list(type, cur_field->next);
+    }
+    return flat_type_list;
+}
+/*
+void insert_struct_list(Type *type, int wrapped_layer, char *name){
+    Field_List *field = (Field_List *)malloc(sizeof(Field_List));
+    field->wrapped_layer = wrapped_layer;
+    field->line_num = type->line_num;
+    field->is_structure = 1;
+    field->type = type;
+    strcpy(field->name, name);
+    Field_List *cur = field->type->u.structure;
+    struct_list[struct_list_num ++] = field;
+    Field_List *cur = struct_list[struct_list_num - 1]->type->u.structure;
+    while (cur){
+        
+    }
+    
+}*/
 
 void add_error_list(int type, char *info, int line_num){
     error_flag = 1;
