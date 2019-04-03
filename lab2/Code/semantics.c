@@ -627,7 +627,7 @@ int check_equal_type(Type *type1, Type *type2){
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){
         Type *type11 = type1->u.array.elem;
-        Type *type22 = type22->u.array.elem;
+        Type *type22 = type2->u.array.elem;
         while(type11->kind == ARRAY && type22->kind == ARRAY){
             type11 = type11->u.array.elem;
             type22 = type22->u.array.elem;

@@ -1,15 +1,12 @@
-int main(){
-    int i;
-    int j;
-    int a;
-    {
-        struct a{
-            int i;
-        } i;
-        i.i = 1;
-        {
-            float i;
-        }
-    }
-    i = 1;
+struct b{
+   int a[20][2]; 
+} c;
+
+struct{
+    int b[1][1];
+} d;
+
+int main()
+{
+    c = d;
 }

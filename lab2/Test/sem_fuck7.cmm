@@ -3,5 +3,5 @@ int func(int a){
 }
 
 int main(){
-    func(2 + 1.5);
+    1.5 * 1 * 1 * 1;
 }

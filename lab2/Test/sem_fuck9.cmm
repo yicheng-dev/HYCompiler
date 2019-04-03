@@ -1,0 +1,6 @@
+struct { struct {int i; } a;} a; 
+struct{int i;} b;
+
+int main(){
+    a == b;
+}
