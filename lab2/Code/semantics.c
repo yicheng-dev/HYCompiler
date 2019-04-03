@@ -365,7 +365,7 @@ Type *sem_exp(AST_Node *node){
                 }
             }
             char info[MAX_ERROR_INFO_LEN];
-            sprintf(info, "Type mismatched for assignment.\n");
+            sprintf(info, "Type mismatched for logical operation.\n");
             add_error_list(7, info, node->first_child->sibling->row_index);
             return NULL;
         }
@@ -548,7 +548,6 @@ Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *n
         new_field->line_num = node->row_index;
         new_field->next = var_hash[hash_index];
         var_hash[hash_index] = new_field;
-        
         /*if (var_hash[hash_index]->next != NULL)
             Log("var_hash[%d]: insert %s %d before %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer, var_hash[hash_index]->next->name, var_hash[hash_index]->next->wrapped_layer);
         Log("var_hash[%d]: new head: %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer);*/
@@ -621,8 +620,14 @@ int check_equal_type(Type *type1, Type *type2){
             field1 = field1->next;
             field2 = field2->next;
         }
-        if (field1 || field2)
+        if (field1 || field2){
+            if (field2){
+                Log("%s", field2->name);
+                if (field2->parent_structure)
+                    Log("%d", field2->parent_structure->type->kind);
+            }
             return 0;
+        }
         return 1;
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){

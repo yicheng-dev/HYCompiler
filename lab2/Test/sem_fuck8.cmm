@@ -1,20 +1,20 @@
-struct b{
-   struct {
-       int fuck;
-   } a;
-   float d;
-} c;
-
-struct{
-    int a;
+struct {
+    struct {
+        int i;
+    } a;
     struct{
-        struct{
-            float t;
-        } b;
-    } c;
-} d;
+        int i;
+    } b;
+} a;
+
+struct {
+    struct {
+        int i;
+        int j;
+    } a;
+} b;
 
 int main()
 {
-    c = d;
+    a == b;
 }

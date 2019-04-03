@@ -33,6 +33,7 @@ struct Field_List {
     int wrapped_layer;
     int is_structure;
     int line_num;
+    struct Field_List *parent_structure;
 };
 
 struct Func {
