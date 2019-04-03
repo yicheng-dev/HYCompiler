@@ -111,4 +111,7 @@ void pop_local_var(int);
 void add_error_list(int, char *, int);
 void print_error_list();
 
+/* for debug */
+void print_field_list(int);
+
 #endif

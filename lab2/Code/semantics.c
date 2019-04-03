@@ -204,9 +204,12 @@ Field_List *sem_param_dec(AST_Node *node){
 
 void sem_comp_st(AST_Node *node, int wrapped_layer){
     assert(node && node->first_child && node->first_child->sibling && node->first_child->sibling->sibling);
+    //print_field_list(105);
     return_type_list = NULL;
     sem_def_list(node->first_child->sibling, 0, wrapped_layer);
     sem_stmt_list(node->first_child->sibling->sibling, wrapped_layer);
+    //print_field_list(105);
+    pop_local_var(wrapped_layer);
 }
 
 void sem_stmt_list(AST_Node *node, int wrapped_layer){
@@ -221,7 +224,6 @@ void sem_stmt(AST_Node *node, int wrapped_layer){
     assert(node && node->first_child);
     if (strcmp(node->first_child->name, "CompSt") == 0){
         sem_comp_st(node->first_child, wrapped_layer + 1);
-        pop_local_var(wrapped_layer + 1);
     }
     if (strcmp(node->first_child->name, "Exp") == 0){
         sem_exp(node->first_child);
@@ -259,7 +261,10 @@ Field_List *sem_def_list(AST_Node *node, int in_structure, int wrapped_layer){
         Field_List *cur = field; // insert field_lists of a def after the front def
         if (!cur)
             return NULL;
-        cur->next = sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
+        if (in_structure)
+            cur->next = sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
+        else
+            sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
         return field;
     }
     return NULL;
@@ -275,7 +280,10 @@ Field_List *sem_dec_list(AST_Node *node, Type *type, int in_structure, int wrapp
     assert(node && node->first_child);
     Field_List *field = sem_dec(node->first_child, type, in_structure, wrapped_layer);
     if (field && node->first_child->sibling){
-        field->next = sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
+        if (in_structure)
+            field->next = sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
+        else
+            sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
     }
     return field;
 }
@@ -462,6 +470,8 @@ Type *sem_exp(AST_Node *node){
         }
         if (strcmp(node->first_child->sibling->sibling->name, "Args") == 0){
             Type *true_params_type = sem_args(node->first_child->sibling->sibling);
+            if (!true_params_type)
+                return NULL;
             if (check_equal_params(func->first_param, true_params_type)){
                 return func->return_type;
             }
@@ -505,18 +515,19 @@ Type *sem_args(AST_Node *node){
 }
 
 Field_List *query_field_hash_table(unsigned hash_index, AST_Node *node, int look_for_structure){
-    Field_List *field_head = var_hash[hash_index];
-    while(field_head){
-        if (field_head->is_structure == look_for_structure)
-            return field_head;
-        field_head = field_head->next;
+    Field_List *field_now = var_hash[hash_index];
+    while(field_now != NULL){
+        if (field_now->is_structure == look_for_structure)
+            return field_now;
+        field_now = field_now->next;
     }
     return NULL;
 }
 
 Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *node, int wrapped_layer, int is_structure){
-    Field_List *field_head = var_hash[hash_index];
-    if (field_head && field_head->wrapped_layer >= wrapped_layer){
+    //Log("var_hash[%d]: %s %d is to be inserted.", hash_index, node->value, wrapped_layer);
+    Field_List *new_field;
+    if (var_hash[hash_index] != NULL && var_hash[hash_index]->wrapped_layer >= wrapped_layer){
         char info[MAX_ERROR_INFO_LEN];
         if (is_structure){
             sprintf(info, "redefinition of '%s'.\n", node->value);
@@ -529,20 +540,18 @@ Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *n
         return NULL;
     }
     else{
-        Field_List *new_field = (Field_List *)malloc(sizeof(Field_List));
+        new_field = malloc(sizeof(Field_List));
         strcpy(new_field->name, node->value);
         new_field->type = type;
         new_field->wrapped_layer = wrapped_layer;
         new_field->is_structure = is_structure;
         new_field->line_num = node->row_index;
-        if (!field_head){
-            field_head = new_field;
-        }
-        else{
-            new_field->next = field_head;
-            field_head = new_field;
-        }
-        var_hash[hash_index] = field_head;
+        new_field->next = var_hash[hash_index];
+        var_hash[hash_index] = new_field;
+        
+        /*if (var_hash[hash_index]->next != NULL)
+            Log("var_hash[%d]: insert %s %d before %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer, var_hash[hash_index]->next->name, var_hash[hash_index]->next->wrapped_layer);
+        Log("var_hash[%d]: new head: %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer);*/
         return new_field;
     }
 }
@@ -702,11 +711,15 @@ void check_undec_func(){
 
 void pop_local_var(int wrapped_layer){
     int i;
+    Field_List *new_head;
     for (i = 0; i < MAX_HASH_TABLE_LEN; i ++){
-        if (var_hash[i] && var_hash[i]->wrapped_layer == wrapped_layer){
-            Field_List *new_head = var_hash[i]->next;
-            if (new_head)
+        if (var_hash[i] != NULL && var_hash[i]->wrapped_layer == wrapped_layer){
+            //Log("var_hash[%d]: %s %d is to be poped. new head is %p", i, var_hash[i]->name, var_hash[i]->wrapped_layer, var_hash[i]->next);
+            new_head = var_hash[i]->next;
+            if (new_head != NULL){
+                //Log("var_hash[%d]: after pop %s %d, new head: %s %d", i, var_hash[i]->name, var_hash[i]->wrapped_layer, var_hash[i]->next->name, var_hash[i]->next->wrapped_layer);
                 var_hash[i] = new_head;
+            }
             else
                 var_hash[i] = NULL;
         }
@@ -734,4 +747,14 @@ void print_error_list(){
         printf("Error type %d at Line %d: %s", cur->type, cur->line_num, cur->info);
         cur = cur->next;
     }
+}
+
+void print_field_list(int hash_index){
+    TestLog("Begin printing var_hash[%d]", hash_index);
+    Field_List *field = var_hash[hash_index];
+    while (field) {
+        TestLog("%s %d", field->name, field->wrapped_layer);
+        field = field->next;
+    }
+    TestLog("End printing var_hash[%d]", hash_index);    
 }

@@ -1,0 +1,15 @@
+int main(){
+    int i;
+    int j;
+    int a;
+    {
+        struct a{
+            int i;
+        } i;
+        i.i = 1;
+        {
+            float i;
+        }
+    }
+    i = 1;
+}
