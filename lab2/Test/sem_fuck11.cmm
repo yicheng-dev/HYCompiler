@@ -1,3 +1,5 @@
+int f (int i, int j) {return 0;}
+float f1(){}
 int main(){
     float
     b
@@ -7,4 +9,5 @@ int main(){
     6
     +
     1;
+    f(1,f1());
 }

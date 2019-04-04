@@ -205,11 +205,9 @@ Field_List *sem_param_dec(AST_Node *node){
 
 void sem_comp_st(AST_Node *node, int wrapped_layer){
     assert(node && node->first_child && node->first_child->sibling && node->first_child->sibling->sibling);
-    //print_field_list(105);
     return_type_list = NULL;
     sem_def_list(node->first_child->sibling, 0, wrapped_layer);
     sem_stmt_list(node->first_child->sibling->sibling, wrapped_layer);
-    //print_field_list(105);
     pop_local_var(wrapped_layer);
 }
 
@@ -535,7 +533,6 @@ Field_List *query_field_hash_table(unsigned hash_index, AST_Node *node, int look
 }
 
 Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *node, int wrapped_layer, int is_structure){
-    //Log("var_hash[%d]: %s %d is to be inserted.", hash_index, node->value, wrapped_layer);
     Field_List *new_field;
     if (var_hash[hash_index] != NULL && var_hash[hash_index]->wrapped_layer >= wrapped_layer){
         char info[MAX_ERROR_INFO_LEN];
@@ -558,9 +555,6 @@ Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *n
         new_field->line_num = node->row_index;
         new_field->next = var_hash[hash_index];
         var_hash[hash_index] = new_field;
-        /*if (var_hash[hash_index]->next != NULL)
-            Log("var_hash[%d]: insert %s %d before %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer, var_hash[hash_index]->next->name, var_hash[hash_index]->next->wrapped_layer);
-        Log("var_hash[%d]: new head: %s %d", hash_index, var_hash[hash_index]->name, var_hash[hash_index]->wrapped_layer);*/
         return new_field;
     }
 }
@@ -626,25 +620,6 @@ int check_equal_type(Type *type1, Type *type2){
     }
     if (type1->kind == STRUCTURE && type2->kind == STRUCTURE){
         return check_struct_equal_type(type1, type2);
-        /*
-        Field_List *field1 = type1->u.structure;
-        Field_List *field2 = type2->u.structure;
-        while (field1 && field2){
-            if (!check_equal_type(field1->type, field2->type)){
-                return 0;
-            }
-            field1 = field1->next;
-            field2 = field2->next;
-        }
-        if (field1 || field2){
-            if (field2){
-                Log("%s", field2->name);
-                if (field2->parent_structure)
-                    Log("%d", field2->parent_structure->type->kind);
-            }
-            return 0;
-        }
-        return 1;*/
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){
         Type *type11 = type1->u.array.elem;
@@ -702,6 +677,7 @@ int check_duplicate_field(Type *structure_type){
 
 int check_equal_params(Field_List *field_list, Type *type){
     Type *true_cur = type;
+    Type *true_first = type;
     Field_List *formal_cur = field_list;
     while (true_cur && formal_cur){
         if (!check_equal_type(true_cur, formal_cur->type)){
@@ -716,7 +692,7 @@ int check_equal_params(Field_List *field_list, Type *type){
     if (true_cur || formal_cur){
         char info[MAX_ERROR_INFO_LEN];
         sprintf(info, "Function arguments are not applicable.\n");
-        add_error_list(9, info, true_cur->line_num);
+        add_error_list(9, info, true_first->line_num);
         return 0;
     }
     return 1;
@@ -753,10 +729,8 @@ void pop_local_var(int wrapped_layer){
     Field_List *new_head;
     for (i = 0; i < MAX_HASH_TABLE_LEN; i ++){
         if (var_hash[i] != NULL && var_hash[i]->wrapped_layer == wrapped_layer){
-            //Log("var_hash[%d]: %s %d is to be poped. new head is %p", i, var_hash[i]->name, var_hash[i]->wrapped_layer, var_hash[i]->next);
             new_head = var_hash[i]->next;
             if (new_head != NULL){
-                //Log("var_hash[%d]: after pop %s %d, new head: %s %d", i, var_hash[i]->name, var_hash[i]->wrapped_layer, var_hash[i]->next->name, var_hash[i]->next->wrapped_layer);
                 var_hash[i] = new_head;
             }
             else
