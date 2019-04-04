@@ -110,7 +110,6 @@ int check_twofunc_equal_params(Field_List *, Field_List *);
 void check_undec_func();
 void pop_local_var(int);
 Type *struct_type_to_list(Type *, Field_List *);
-//void insert_struct_list(Type *, int);
 
 /* error report list */
 void add_error_list(int, char *, int);

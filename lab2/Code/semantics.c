@@ -5,8 +5,6 @@
 
 Field_List *var_hash[MAX_HASH_TABLE_LEN];
 Func *func_hash[MAX_HASH_TABLE_LEN];
-//Field_List *struct_list[MAX_HASH_TABLE_LEN];
-//int struct_list_num = 0;
 Error_List *error_head = NULL;
 extern int error_flag;
 Type *return_type_list = NULL;
@@ -123,7 +121,6 @@ Type* sem_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     if (!check_duplicate_field(structure_type)){
         return NULL;
     }
-    //insert_struct_list(structure_type, wrapped_layer);
     if (node->first_child->sibling->first_child){
         unsigned hash_index = hash_pjw(node->first_child->sibling->first_child->value);
         insert_field_hash_table(hash_index, structure_type, node->first_child->sibling->first_child, wrapped_layer, 1);
@@ -616,11 +613,15 @@ Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *f
 }
 
 int check_equal_type(Type *type1, Type *type2){
+    if (!type1 || !type2)
+        return 1; // if many errors happen in an expression, only one error will be reported.
     if (type1->kind == BASIC && type2->kind == BASIC){
-        if (type1->u.basic == BASIC_INT && type2->u.basic == BASIC_INT)
+        if (type1->u.basic == BASIC_INT && type2->u.basic == BASIC_INT){
             return 1;
-        if (type1->u.basic == BASIC_FLOAT && type2->u.basic == BASIC_FLOAT)
+        }
+        if (type1->u.basic == BASIC_FLOAT && type2->u.basic == BASIC_FLOAT){
             return 1;
+        }
         return 0;
     }
     if (type1->kind == STRUCTURE && type2->kind == STRUCTURE){
@@ -783,22 +784,6 @@ Type *struct_type_to_list(Type *type, Field_List *cur_field){
     }
     return flat_type_list;
 }
-/*
-void insert_struct_list(Type *type, int wrapped_layer, char *name){
-    Field_List *field = (Field_List *)malloc(sizeof(Field_List));
-    field->wrapped_layer = wrapped_layer;
-    field->line_num = type->line_num;
-    field->is_structure = 1;
-    field->type = type;
-    strcpy(field->name, name);
-    Field_List *cur = field->type->u.structure;
-    struct_list[struct_list_num ++] = field;
-    Field_List *cur = struct_list[struct_list_num - 1]->type->u.structure;
-    while (cur){
-        
-    }
-    
-}*/
 
 void add_error_list(int type, char *info, int line_num){
     error_flag = 1;
