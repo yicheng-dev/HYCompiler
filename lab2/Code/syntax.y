@@ -360,7 +360,7 @@ Args :
 
 #include "lex.yy.c"
 
-int yyerror(char *msg){
+int yyerror(const char *msg){
     error_flag = 1;
     printf("Error type B at Line %d: %s.\n", yylineno, msg);
     return 0;

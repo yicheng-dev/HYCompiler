@@ -63,7 +63,7 @@ void sem_ext_def(AST_Node *node){
                     add_error_list(8, info, cur->line_num);
                     return;
                 }
-                cur = cur->next;
+                cur = cur->next_ret_type;
             }
             unsigned hash_index = hash_pjw(func->name);
             insert_func_hash_table(hash_index, type, func);
@@ -233,7 +233,7 @@ void sem_stmt(AST_Node *node, int wrapped_layer){
             return;
         type->line_num = node->first_child->sibling->row_index;
         if (return_type_list){
-            type->next = return_type_list;
+            type->next_ret_type = return_type_list;
             return_type_list = type;
         }
         else{
@@ -517,7 +517,7 @@ Type *sem_args(AST_Node *node){
         return NULL;
     type->line_num = node->first_child->row_index;
     if (node->first_child->sibling){
-        type->next = sem_args(node->first_child->sibling->sibling);
+        type->next_actual_param = sem_args(node->first_child->sibling->sibling);
     }
     return type;
 }
@@ -687,7 +687,7 @@ int check_equal_params(Field_List *field_list, Type *type){
             return 0;
         }
         formal_cur = formal_cur->next;
-        true_cur = true_cur->next;
+        true_cur = true_cur->next_actual_param;
     }
     if (true_cur || formal_cur){
         char info[MAX_ERROR_INFO_LEN];

@@ -1,6 +1,10 @@
-struct {struct{int i;} b; float c;} a; 
-struct{int i;} b;
-
+int func(){
+    struct a{
+        int a;
+        float b;
+    } c;
+}
 int main(){
-    a = b;
+    struct a b;
+    return 0;
 }

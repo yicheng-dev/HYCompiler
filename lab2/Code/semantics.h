@@ -22,7 +22,8 @@ struct Type {
         } array;
         struct Field_List *structure;
     } u;
-    struct Type *next; // multiple return type in a CompSt
+    struct Type *next_ret_type; // multiple return type in a CompSt
+    struct Type *next_actual_param; // next actual param
     struct Type *next_flat; // struct type to non-struct flat type list
     int line_num; // multiple return type in a CompSt
 };
@@ -34,7 +35,6 @@ struct Field_List {
     int wrapped_layer;
     int is_structure;
     int line_num;
-    struct Field_List *parent_structure;
 };
 
 struct Func {

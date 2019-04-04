@@ -9,7 +9,7 @@
 int yylex();
 void yyrestart(FILE*);
 int yyparse();
-int yyerror(char*);
+int yyerror(const char *);
 
 typedef struct AST_Node
 {
