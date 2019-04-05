@@ -1,11 +1,11 @@
 #ifndef SEMANTICS_H
 #define SEMANTICS_H
 
-#define MAX_NAME_LEN 128
+#define MAX_NAME_LEN 256
 #define MAX_HASH_TABLE_LEN 16384
 #define BASIC_INT 1
 #define BASIC_FLOAT 2
-#define MAX_ERROR_INFO_LEN 64
+#define MAX_ERROR_INFO_LEN 256
 #define MAX_FIELD_NUM 256
 
 #include "AST.h"
@@ -20,7 +20,10 @@ struct Type {
             struct Type *elem;
             int size;
         } array;
-        struct Field_List *structure;
+        struct {
+            struct Field_List *first_field;
+            struct Type *first_flat;
+        } structure;
     } u;
     struct Type *next_ret_type; // multiple return type in a CompSt
     struct Type *next_actual_param; // next actual param
@@ -102,14 +105,14 @@ Field_List *query_field_hash_table(unsigned, AST_Node *, int);
 Func *insert_func_hash_table(unsigned, Type *, Func *);
 Func *query_func_hash_table(unsigned);
 Func *insert_func_dec_hash_table(unsigned, Type *, Func *);
-int check_equal_type(Type *, Type *);
+int check_equal_type(Type *, Type *, int);
 int check_struct_equal_type(Type *, Type *);
 int check_duplicate_field(Type *);
 int check_equal_params(Field_List *, Type *);
 int check_twofunc_equal_params(Field_List *, Field_List *);
 void check_undec_func();
 void pop_local_var(int);
-Type *struct_type_to_list(Type *, Field_List *);
+Type *struct_type_to_list(Field_List *);
 
 /* error report list */
 void add_error_list(int, char *, int);

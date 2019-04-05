@@ -1,3 +1,10 @@
+struct S {
+  int a;
+  int b;
+};
+
 int main(){
-    
+    struct S a;
+    struct S b;
+    a = b;
 }

@@ -38,7 +38,7 @@ void sem_ext_def(AST_Node *node){
     assert(node);
     Type *type = sem_specifier(node->first_child, 0, 0); // get type from specifier
     if (strcmp(node->first_child->sibling->name, "ExtDecList") == 0)
-        // usage of structure or TYPE
+        // usage of structure.first_field or TYPE
         sem_ext_dec_list(node->first_child->sibling, type); // set type to decList
     else if (strcmp(node->first_child->sibling->name, "SEMI") == 0){
         // Definition of structure
@@ -54,10 +54,13 @@ void sem_ext_def(AST_Node *node){
             Func *func = sem_fun_dec(node->first_child->sibling);
             if (!func)
                 return;
+            unsigned hash_index = hash_pjw(func->name);
+            insert_func_hash_table(hash_index, type, func);
             sem_comp_st(node->first_child->sibling->sibling, 1);
+            pop_local_var(1);
             Type *cur = return_type_list;
             while (cur){
-                if (!check_equal_type(type, cur)){
+                if (!check_equal_type(type, cur, 0)){
                     char info[MAX_ERROR_INFO_LEN];
                     sprintf(info, "Type mismatched for return.\n");
                     add_error_list(8, info, cur->line_num);
@@ -65,9 +68,6 @@ void sem_ext_def(AST_Node *node){
                 }
                 cur = cur->next_ret_type;
             }
-            unsigned hash_index = hash_pjw(func->name);
-            insert_func_hash_table(hash_index, type, func);
-            pop_local_var(1);
         }
         else{ // Declaration of functions
             assert(strcmp(node->first_child->sibling->sibling->name, "SEMI") == 0);
@@ -116,7 +116,8 @@ Type* sem_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     assert(strcmp(node->first_child->sibling->name, "OptTag") == 0);
     Type *structure_type = (Type *)malloc(sizeof(Type));
     structure_type->kind = STRUCTURE;
-    structure_type->u.structure = sem_def_list(node->first_child->sibling->sibling->sibling, 1, wrapped_layer);
+    structure_type->u.structure.first_field = sem_def_list(node->first_child->sibling->sibling->sibling, 1, wrapped_layer);
+    structure_type->u.structure.first_flat = struct_type_to_list(structure_type->u.structure.first_field);
     structure_type->line_num = node->first_child->sibling->sibling->sibling->row_index;
     if (!check_duplicate_field(structure_type)){
         return NULL;
@@ -298,13 +299,13 @@ Field_List *sem_dec(AST_Node *node, Type *type, int in_structure, int wrapped_la
         }
         Field_List *var_dec_field = sem_var_dec(node->first_child, type, in_structure, wrapped_layer);
         if (var_dec_field){
-            if (check_equal_type(var_dec_field->type, sem_exp(node->first_child->sibling->sibling))){
+            if (check_equal_type(var_dec_field->type, sem_exp(node->first_child->sibling->sibling), 0)){
                 return var_dec_field;
             }
             else{
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "Type mismatched for assignment.\n");
-                add_error_list(7, info, node->first_child->sibling->row_index);
+                add_error_list(5, info, node->first_child->sibling->row_index);
                 return NULL;
             }
         }
@@ -324,7 +325,7 @@ Type *sem_exp(AST_Node *node){
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2)){
+            if (check_equal_type(type1, type2, 0)){
                 //check left-value
                 AST_Node *child_node = node->first_child;
                 if ((strcmp(child_node->first_child->name, "ID") == 0 && !child_node->first_child->sibling) 
@@ -345,13 +346,12 @@ Type *sem_exp(AST_Node *node){
             return NULL;
         }
         else if (strcmp(node->first_child->sibling->name, "AND") == 0
-            || strcmp(node->first_child->sibling->name, "OR") == 0
-            || strcmp(node->first_child->sibling->name, "RELOP") == 0){
+            || strcmp(node->first_child->sibling->name, "OR") == 0){
             Type *type1 = sem_exp(node->first_child);
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2)){
+            if (check_equal_type(type1, type2, 0)){
                 //only INT can do logical computation
                 if (type1->kind == BASIC && type1->u.basic == BASIC_INT){
                     return type1;
@@ -371,21 +371,28 @@ Type *sem_exp(AST_Node *node){
         else if (strcmp(node->first_child->sibling->name, "PLUS") == 0
             || strcmp(node->first_child->sibling->name, "MINUS") == 0
             || strcmp(node->first_child->sibling->name, "STAR") == 0
-            || strcmp(node->first_child->sibling->name, "DIV") == 0){
+            || strcmp(node->first_child->sibling->name, "DIV") == 0
+            || strcmp(node->first_child->sibling->name, "RELOP") == 0){
             Type *type1 = sem_exp(node->first_child);
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2)){
-                return type1;
+            if (check_equal_type(type1, type2, 0)){
+                Type *type = (Type *)malloc(sizeof(Type));
+                type->kind = BASIC;
+                type->u.basic = BASIC_INT;
+                return type;
             }
             char info[MAX_ERROR_INFO_LEN];
-            sprintf(info, "Type mismatched for assignment.\n");
+            sprintf(info, "Type mismatched for arithmatic operation.\n");
             add_error_list(7, info, node->first_child->sibling->row_index);
             return NULL;
         }
         else if (strcmp(node->first_child->sibling->name, "LB") == 0 && strcmp(node->first_child->sibling->sibling->name, "Exp") == 0){
-            if (strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0){
+            Type *index_type = sem_exp(node->first_child->sibling->sibling);
+            if (!index_type)
+                return NULL;
+            if (index_type->kind == BASIC && index_type->u.basic == BASIC_INT){
                 Type *type = sem_exp(node->first_child);
                 if (!type)
                     return NULL;
@@ -411,9 +418,11 @@ Type *sem_exp(AST_Node *node){
             if (!type)
                 return NULL;
             if (type->kind == STRUCTURE){
-                Field_List *cur = type->u.structure;
+                Field_List *cur = type->u.structure.first_field;
                 while (cur){
                     if (strcmp(cur->name, node->first_child->sibling->sibling->value) == 0){
+                        if (strcmp("b7p6y_i", cur->name) == 0){
+                        }
                         return cur->type;
                     }
                     cur = cur->next;
@@ -440,7 +449,10 @@ Type *sem_exp(AST_Node *node){
         if (!type)
             return NULL;
         if (type->kind == BASIC && type->u.basic == BASIC_INT){
-            return type;
+            Type *new_type = (Type *)malloc(sizeof(Type));
+            new_type->kind = BASIC;
+            new_type->u.basic = BASIC_INT;
+            return new_type;
         }
         char info[MAX_ERROR_INFO_LEN];
         sprintf(info, "Only INT varaibles can do logical computation.\n");
@@ -569,7 +581,7 @@ Func *insert_func_hash_table(unsigned hash_index, Type *return_type, Func *func)
             return NULL;
         }
         else{
-            if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
+            if (!check_equal_type(return_type, func_head->return_type, 0) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
                 add_error_list(19, info, func->line_num);
@@ -592,7 +604,7 @@ Func *query_func_hash_table(unsigned hash_index){
 Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *func){
     Func *func_head = func_hash[hash_index];
     if (func_head){
-        if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
+        if (!check_equal_type(return_type, func_head->return_type, 0) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
             add_error_list(19, info, func->line_num);
@@ -606,7 +618,7 @@ Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *f
     return func;
 }
 
-int check_equal_type(Type *type1, Type *type2){
+int check_equal_type(Type *type1, Type *type2, int in_structure){
     if (!type1 || !type2)
         return 1; // if many errors happen in an expression, only one error will be reported.
     if (type1->kind == BASIC && type2->kind == BASIC){
@@ -622,28 +634,40 @@ int check_equal_type(Type *type1, Type *type2){
         return check_struct_equal_type(type1, type2);
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){
+        int dim1 = 0, dim2 = 0;
         Type *type11 = type1->u.array.elem;
         Type *type22 = type2->u.array.elem;
-        while(type11->kind == ARRAY && type22->kind == ARRAY){
+        while(type11->kind == ARRAY){
             type11 = type11->u.array.elem;
+            dim1 ++;
+        }
+        while(type22->kind == ARRAY){
             type22 = type22->u.array.elem;
+            dim2 ++;
         }
-        if (type11->kind == ARRAY || type22->kind == ARRAY){
+        if (in_structure && dim1 != dim2)
             return 0;
-        }
-        return check_equal_type(type11, type22);
+        assert(type11->kind != ARRAY && type22->kind != ARRAY);
+        return check_equal_type(type11, type22, in_structure);
     }
     return 0;
 }
 
 int check_struct_equal_type(Type *type1, Type *type2){
-    Type *type_list1 = struct_type_to_list(type1, type1->u.structure);
-    Type *type_list2 = struct_type_to_list(type2, type2->u.structure);
+    Type *type_list1 = type1->u.structure.first_flat;
+    if (!type_list1){
+        type_list1 = type1->u.structure.first_flat = struct_type_to_list(type1->u.structure.first_field);
+    }
+    Type *type_list2 = type2->u.structure.first_flat;
+    if (!type_list2){
+        type_list2 = type2->u.structure.first_flat = struct_type_to_list(type2->u.structure.first_field);
+    }
+    
     Type *cur1 = type_list1;
     Type *cur2 = type_list2;
     while (cur1 && cur2){
         assert(cur1->kind != STRUCTURE && cur2->kind != STRUCTURE);
-        if (!check_equal_type(cur1, cur2))
+        if (!check_equal_type(cur1, cur2, 1))
             return 0;
         cur1 = cur1->next_flat;
         cur2 = cur2->next_flat;
@@ -656,7 +680,7 @@ int check_struct_equal_type(Type *type1, Type *type2){
 
 int check_duplicate_field(Type *structure_type){
     assert(structure_type && structure_type->kind == STRUCTURE);
-    Field_List *cur = structure_type->u.structure;
+    Field_List *cur = structure_type->u.structure.first_field;
     char field_name[MAX_FIELD_NUM][MAX_NAME_LEN];
     int field_num = 0;
     while(cur){
@@ -680,7 +704,11 @@ int check_equal_params(Field_List *field_list, Type *type){
     Type *true_first = type;
     Field_List *formal_cur = field_list;
     while (true_cur && formal_cur){
-        if (!check_equal_type(true_cur, formal_cur->type)){
+        if (strcmp(formal_cur->name, "MyFk9F") == 0){
+            Log("shit");
+        }
+        Log("fuck");
+        if (!check_equal_type(true_cur, formal_cur->type, 0)){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Function arguments are not applicable.\n");
             add_error_list(9, info, true_cur->line_num);
@@ -702,7 +730,7 @@ int check_twofunc_equal_params(Field_List *field1, Field_List *field2){
     Field_List *cur1 = field1;
     Field_List *cur2 = field2;
     while (cur1 && cur2){
-        if (!check_equal_type(cur1->type, cur2->type)){
+        if (!check_equal_type(cur1->type, cur2->type, 0)){
             return 0;
         }
         cur1 = cur1->next;
@@ -739,7 +767,7 @@ void pop_local_var(int wrapped_layer){
     }
 }
 
-Type *struct_type_to_list(Type *type, Field_List *cur_field){
+Type *struct_type_to_list(Field_List *cur_field){
     if (!cur_field){
         return NULL;
     }
@@ -748,29 +776,31 @@ Type *struct_type_to_list(Type *type, Field_List *cur_field){
         flat_type_list = cur_field->type;
     }
     else{
-        flat_type_list = struct_type_to_list(cur_field->type, cur_field->type->u.structure);
+        flat_type_list = struct_type_to_list(cur_field->type->u.structure.first_field);
     }
     if (flat_type_list){
         Type *tail = flat_type_list;
         while (tail && tail->next_flat)
             tail = tail->next_flat;
-        tail->next_flat = struct_type_to_list(type, cur_field->next);
+        tail->next_flat = struct_type_to_list(cur_field->next);
     }
+
     return flat_type_list;
 }
 
 void add_error_list(int type, char *info, int line_num){
     error_flag = 1;
     Error_List *error = (Error_List *)malloc(sizeof(Error_List));
-        error->type = type;
-        strcpy(error->info, info);
-        error->line_num = line_num;
-        error->next = NULL;
+    error->type = type;
+    strcpy(error->info, info);
+    error->line_num = line_num;
+    error->next = NULL;
     if (!error_head){
         error_head = error;
     }
     else{
-        error_head->next = error;
+        error->next = error_head;
+        error_head = error;
     }
 }
 
