@@ -655,16 +655,13 @@ int check_equal_type(Type *type1, Type *type2, int in_structure){
 
 int check_struct_equal_type(Type *type1, Type *type2){
     Type *type_list1 = type1->u.structure.first_flat;
-    if (!type_list1){
-        type_list1 = type1->u.structure.first_flat = struct_type_to_list(type1->u.structure.first_field);
-    }
     Type *type_list2 = type2->u.structure.first_flat;
-    if (!type_list2){
-        type_list2 = type2->u.structure.first_flat = struct_type_to_list(type2->u.structure.first_field);
-    }
+    assert(type_list1);
+    assert(type_list2);
     
     Type *cur1 = type_list1;
     Type *cur2 = type_list2;
+
     while (cur1 && cur2){
         assert(cur1->kind != STRUCTURE && cur2->kind != STRUCTURE);
         if (!check_equal_type(cur1, cur2, 1))
@@ -704,10 +701,6 @@ int check_equal_params(Field_List *field_list, Type *type){
     Type *true_first = type;
     Field_List *formal_cur = field_list;
     while (true_cur && formal_cur){
-        if (strcmp(formal_cur->name, "MyFk9F") == 0){
-            Log("shit");
-        }
-        Log("fuck");
         if (!check_equal_type(true_cur, formal_cur->type, 0)){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Function arguments are not applicable.\n");
@@ -776,7 +769,10 @@ Type *struct_type_to_list(Field_List *cur_field){
         flat_type_list = cur_field->type;
     }
     else{
-        flat_type_list = struct_type_to_list(cur_field->type->u.structure.first_field);
+        if (cur_field->type->u.structure.first_flat)
+            flat_type_list = cur_field->type->u.structure.first_flat;
+        else
+            flat_type_list = struct_type_to_list(cur_field->type->u.structure.first_field);
     }
     if (flat_type_list){
         Type *tail = flat_type_list;
