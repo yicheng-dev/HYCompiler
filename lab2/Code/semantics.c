@@ -261,8 +261,12 @@ Field_List *sem_def_list(AST_Node *node, int in_structure, int wrapped_layer){
         Field_List *cur = field; // insert field_lists of a def after the front def
         if (!cur)
             return NULL;
-        if (in_structure)
+        if (in_structure){
+            while(cur && cur->next){
+                cur = cur->next;
+            }
             cur->next = sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
+        }
         else
             sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
         return field;
@@ -656,8 +660,6 @@ int check_equal_type(Type *type1, Type *type2, int in_structure){
 int check_struct_equal_type(Type *type1, Type *type2){
     Type *type_list1 = type1->u.structure.first_flat;
     Type *type_list2 = type2->u.structure.first_flat;
-    assert(type_list1);
-    assert(type_list2);
     
     Type *cur1 = type_list1;
     Type *cur2 = type_list2;
