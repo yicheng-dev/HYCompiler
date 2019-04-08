@@ -363,7 +363,7 @@ Type *sem_exp(AST_Node *node){
                 else{
                     char info[MAX_ERROR_INFO_LEN];
                     sprintf(info, "Only INT varaibles can do logical computation.\n");
-                    add_error_list(98, info, node->first_child->sibling->row_index);
+                    add_error_list(7, info, node->first_child->sibling->row_index);
                     return NULL;
                 }
             }
@@ -382,10 +382,15 @@ Type *sem_exp(AST_Node *node){
             if (!(type1 && type2))
                 return NULL;
             if (check_equal_type(type1, type2, 0)){
-                Type *type = (Type *)malloc(sizeof(Type));
-                type->kind = BASIC;
-                type->u.basic = BASIC_INT;
-                return type;
+                if (strcmp(node->first_child->sibling->name, "RELOP") == 0){
+                    Type *type = (Type *)malloc(sizeof(Type));
+                    type->kind = BASIC;
+                    type->u.basic = BASIC_INT;
+                    return type;
+                }
+                else{
+                    return type1;
+                }
             }
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Type mismatched for arithmatic operation.\n");
@@ -460,7 +465,7 @@ Type *sem_exp(AST_Node *node){
         }
         char info[MAX_ERROR_INFO_LEN];
         sprintf(info, "Only INT varaibles can do logical computation.\n");
-        add_error_list(98, info, node->first_child->sibling->row_index);
+        add_error_list(7, info, node->first_child->sibling->row_index);
         return NULL;
     }
     else if (strcmp(node->first_child->name, "ID") == 0){
