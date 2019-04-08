@@ -105,7 +105,7 @@ Field_List *query_field_hash_table(unsigned, AST_Node *, int);
 Func *insert_func_hash_table(unsigned, Type *, Func *);
 Func *query_func_hash_table(unsigned);
 Func *insert_func_dec_hash_table(unsigned, Type *, Func *);
-int check_equal_type(Type *, Type *, int);
+int check_equal_type(Type *, Type *);
 int check_struct_equal_type(Type *, Type *);
 int check_duplicate_field(Type *);
 int check_equal_params(Field_List *, Type *);

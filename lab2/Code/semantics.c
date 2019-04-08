@@ -60,7 +60,7 @@ void sem_ext_def(AST_Node *node){
             pop_local_var(1);
             Type *cur = return_type_list;
             while (cur){
-                if (!check_equal_type(type, cur, 0)){
+                if (!check_equal_type(type, cur)){
                     char info[MAX_ERROR_INFO_LEN];
                     sprintf(info, "Type mismatched for return.\n");
                     add_error_list(8, info, cur->line_num);
@@ -303,7 +303,7 @@ Field_List *sem_dec(AST_Node *node, Type *type, int in_structure, int wrapped_la
         }
         Field_List *var_dec_field = sem_var_dec(node->first_child, type, in_structure, wrapped_layer);
         if (var_dec_field){
-            if (check_equal_type(var_dec_field->type, sem_exp(node->first_child->sibling->sibling), 0)){
+            if (check_equal_type(var_dec_field->type, sem_exp(node->first_child->sibling->sibling))){
                 return var_dec_field;
             }
             else{
@@ -329,7 +329,7 @@ Type *sem_exp(AST_Node *node){
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2, 0)){
+            if (check_equal_type(type1, type2)){
                 //check left-value
                 AST_Node *child_node = node->first_child;
                 if ((strcmp(child_node->first_child->name, "ID") == 0 && !child_node->first_child->sibling) 
@@ -355,7 +355,7 @@ Type *sem_exp(AST_Node *node){
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2, 0)){
+            if (check_equal_type(type1, type2)){
                 //only INT can do logical computation
                 if (type1->kind == BASIC && type1->u.basic == BASIC_INT){
                     return type1;
@@ -381,7 +381,7 @@ Type *sem_exp(AST_Node *node){
             Type *type2 = sem_exp(node->first_child->sibling->sibling);
             if (!(type1 && type2))
                 return NULL;
-            if (check_equal_type(type1, type2, 0)){
+            if (check_equal_type(type1, type2)){
                 if (strcmp(node->first_child->sibling->name, "RELOP") == 0){
                     Type *type = (Type *)malloc(sizeof(Type));
                     type->kind = BASIC;
@@ -590,7 +590,7 @@ Func *insert_func_hash_table(unsigned hash_index, Type *return_type, Func *func)
             return NULL;
         }
         else{
-            if (!check_equal_type(return_type, func_head->return_type, 0) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
+            if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
                 add_error_list(19, info, func->line_num);
@@ -613,7 +613,7 @@ Func *query_func_hash_table(unsigned hash_index){
 Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *func){
     Func *func_head = func_hash[hash_index];
     if (func_head){
-        if (!check_equal_type(return_type, func_head->return_type, 0) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
+        if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
             add_error_list(19, info, func->line_num);
@@ -627,7 +627,7 @@ Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *f
     return func;
 }
 
-int check_equal_type(Type *type1, Type *type2, int in_structure){
+int check_equal_type(Type *type1, Type *type2){
     if (!type1 || !type2)
         return 1; // if many errors happen in an expression, only one error will be reported.
     if (type1->kind == BASIC && type2->kind == BASIC){
@@ -654,10 +654,10 @@ int check_equal_type(Type *type1, Type *type2, int in_structure){
             type22 = type22->u.array.elem;
             dim2 ++;
         }
-        if (in_structure && dim1 != dim2)
+        if (dim1 != dim2)
             return 0;
         assert(type11->kind != ARRAY && type22->kind != ARRAY);
-        return check_equal_type(type11, type22, in_structure);
+        return check_equal_type(type11, type22);
     }
     return 0;
 }
@@ -671,7 +671,7 @@ int check_struct_equal_type(Type *type1, Type *type2){
 
     while (cur1 && cur2){
         assert(cur1->kind != STRUCTURE && cur2->kind != STRUCTURE);
-        if (!check_equal_type(cur1, cur2, 1))
+        if (!check_equal_type(cur1, cur2))
             return 0;
         cur1 = cur1->next_flat;
         cur2 = cur2->next_flat;
@@ -708,7 +708,7 @@ int check_equal_params(Field_List *field_list, Type *type){
     Type *true_first = type;
     Field_List *formal_cur = field_list;
     while (true_cur && formal_cur){
-        if (!check_equal_type(true_cur, formal_cur->type, 0)){
+        if (!check_equal_type(true_cur, formal_cur->type)){
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "Function arguments are not applicable.\n");
             add_error_list(9, info, true_cur->line_num);
@@ -730,7 +730,7 @@ int check_twofunc_equal_params(Field_List *field1, Field_List *field2){
     Field_List *cur1 = field1;
     Field_List *cur2 = field2;
     while (cur1 && cur2){
-        if (!check_equal_type(cur1->type, cur2->type, 0)){
+        if (!check_equal_type(cur1->type, cur2->type)){
             return 0;
         }
         cur1 = cur1->next;
