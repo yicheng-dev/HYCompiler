@@ -85,9 +85,9 @@ Field_List *sem_var_list(AST_Node *);
 Field_List *sem_param_dec(AST_Node *);
 
 /* semantics of Statements */
-void sem_comp_st(AST_Node *, int);
-void sem_stmt_list(AST_Node *, int);
-void sem_stmt(AST_Node *, int);
+void sem_comp_st(AST_Node *, int, Func *);
+void sem_stmt_list(AST_Node *, int, Func *);
+void sem_stmt(AST_Node *, int, Func *);
 
 /* semantics of Local Definitions */
 Field_List *sem_def_list(AST_Node *, int, int);

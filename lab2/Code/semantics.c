@@ -7,7 +7,6 @@ Field_List *var_hash[MAX_HASH_TABLE_LEN];
 Func *func_hash[MAX_HASH_TABLE_LEN];
 Error_List *error_head = NULL;
 extern int error_flag;
-Type *return_type_list = NULL;
 
 void init_hash_table() {
     int i;
@@ -54,20 +53,22 @@ void sem_ext_def(AST_Node *node){
             Func *func = sem_fun_dec(node->first_child->sibling);
             if (!func)
                 return;
+            func->return_type = type;
             unsigned hash_index = hash_pjw(func->name);
             insert_func_hash_table(hash_index, type, func);
-            sem_comp_st(node->first_child->sibling->sibling, 1);
+            sem_comp_st(node->first_child->sibling->sibling, 1, func);
+            // Type *cur = func->ret_type_list;
+            // while (cur){
+            //     printf("%d\n", cur->u.basic);
+            //     if (!check_equal_type(type, cur)){
+            //         char info[MAX_ERROR_INFO_LEN];
+            //         sprintf(info, "Type mismatched for return.\n");
+            //         add_error_list(8, info, cur->line_num);
+            //         return;
+            //     }
+            //     cur = cur->next_ret_type;
+            // }
             pop_local_var(1);
-            Type *cur = return_type_list;
-            while (cur){
-                if (!check_equal_type(type, cur)){
-                    char info[MAX_ERROR_INFO_LEN];
-                    sprintf(info, "Type mismatched for return.\n");
-                    add_error_list(8, info, cur->line_num);
-                    return;
-                }
-                cur = cur->next_ret_type;
-            }
         }
         else{ // Declaration of functions
             assert(strcmp(node->first_child->sibling->sibling->name, "SEMI") == 0);
@@ -177,7 +178,6 @@ Func *sem_fun_dec(AST_Node *node){
             func->param_size ++;
             cur = cur->next;
         }
-
         return func;
     }
     else{
@@ -204,53 +204,51 @@ Field_List *sem_param_dec(AST_Node *node){
     return sem_var_dec(node->first_child->sibling, type, 0, 1);
 }
 
-void sem_comp_st(AST_Node *node, int wrapped_layer){
+void sem_comp_st(AST_Node *node, int wrapped_layer, Func *func){
     assert(node && node->first_child && node->first_child->sibling && node->first_child->sibling->sibling);
-    return_type_list = NULL;
     sem_def_list(node->first_child->sibling, 0, wrapped_layer);
-    sem_stmt_list(node->first_child->sibling->sibling, wrapped_layer);
+    sem_stmt_list(node->first_child->sibling->sibling, wrapped_layer, func);
     pop_local_var(wrapped_layer);
 }
 
-void sem_stmt_list(AST_Node *node, int wrapped_layer){
+void sem_stmt_list(AST_Node *node, int wrapped_layer, Func *func){
     assert(node);
     if (node->first_child){
-        sem_stmt(node->first_child, wrapped_layer);
-        sem_stmt_list(node->first_child->sibling, wrapped_layer);
+        sem_stmt(node->first_child, wrapped_layer, func);
+        sem_stmt_list(node->first_child->sibling, wrapped_layer, func);
     }
 }
 
-void sem_stmt(AST_Node *node, int wrapped_layer){
+void sem_stmt(AST_Node *node, int wrapped_layer, Func *func){
     assert(node && node->first_child);
     if (strcmp(node->first_child->name, "CompSt") == 0){
-        sem_comp_st(node->first_child, wrapped_layer + 1);
+        sem_comp_st(node->first_child, wrapped_layer + 1, func);
     }
     if (strcmp(node->first_child->name, "Exp") == 0){
         sem_exp(node->first_child);
     }
     if (strcmp(node->first_child->name, "RETURN") == 0){
         Type *type = sem_exp(node->first_child->sibling);
-        if (!type)
-            return;
-        type->line_num = node->first_child->sibling->row_index;
-        if (return_type_list){
-            type->next_ret_type = return_type_list;
-            return_type_list = type;
+        if (type && !check_equal_type(type, func->return_type)){
+            char info[MAX_ERROR_INFO_LEN];
+            sprintf(info, "Type mismatched for return.\n");
+            add_error_list(8, info, node->first_child->sibling->row_index);
         }
-        else{
-            return_type_list = type;
-        }
+        // if (!type)
+        //     return;
+        // type->line_num = node->first_child->sibling->row_index;
+        // return type;
     }
     if (strcmp(node->first_child->name, "IF") == 0){
         sem_exp(node->first_child->sibling->sibling);
-        sem_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer);
+        sem_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer, func);
         if (node->first_child->sibling->sibling->sibling->sibling->sibling){
-            sem_stmt(node->first_child->sibling->sibling->sibling->sibling->sibling->sibling, wrapped_layer);
+            sem_stmt(node->first_child->sibling->sibling->sibling->sibling->sibling->sibling, wrapped_layer, func);
         }
     }
     if (strcmp(node->first_child->name, "WHILE") == 0){
         sem_exp(node->first_child->sibling->sibling);
-        sem_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer);
+        sem_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer, func);
     }
 }
 
@@ -798,6 +796,7 @@ void add_error_list(int type, char *info, int line_num){
     strcpy(error->info, info);
     error->line_num = line_num;
     error->next = NULL;
+    //printf("Error type %d at Line %d: %s", error->type, error->line_num, error->info);
     if (!error_head){
         error_head = error;
     }
