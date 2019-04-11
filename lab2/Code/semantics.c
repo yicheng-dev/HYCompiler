@@ -55,6 +55,12 @@ void sem_ext_def(AST_Node *node){
                 return;
             func->return_type = type;
             unsigned hash_index = hash_pjw(func->name);
+            if (strcmp(func->name, "i_func_6995") == 0){
+                Log("6995: %d", hash_index);
+            }
+            else if (strcmp(func->name, "i_func_6989") == 0){
+                Log("6989: %d", hash_index);
+            }
             insert_func_hash_table(hash_index, type, func);
             sem_comp_st(node->first_child->sibling->sibling, 1, func);
             // Type *cur = func->ret_type_list;
@@ -580,6 +586,9 @@ Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *n
 
 Func *insert_func_hash_table(unsigned hash_index, Type *return_type, Func *func){
     Func *func_head = func_hash[hash_index];
+    if (strcmp(func->name, "i_func_6989") == 0 && func_head){
+        Log("6989: %d\t%s\t%d\t%d", hash_index, func_head->name, func_head->defined, func_head->line_num);
+    }
     if (func_head){
         if (func_head->defined){
             char info[MAX_ERROR_INFO_LEN];
@@ -601,6 +610,10 @@ Func *insert_func_hash_table(unsigned hash_index, Type *return_type, Func *func)
     func->return_type = return_type;
     func->defined = 1;
     func_hash[hash_index] = func;
+    func_head = func_hash[hash_index];
+    if (strcmp(func->name, "i_func_6995") == 0){
+        Log("6995: %d\t%s\t%d\t%d", hash_index, func_head->name, func_head->defined, func_head->line_num);
+    }
     return func;
 }
 

@@ -14,10 +14,10 @@ int str_to_int(char *str, int type){
 
 AST_Node *create_node(char *name, char *value, int token_type, int lineno){
     AST_Node *node = (AST_Node *)malloc(sizeof(AST_Node));
-    node->name = (char *)malloc(sizeof(name));
-    strcpy(node->name, name);
-    node->value = (char *)malloc(sizeof(value));
-    strcpy(node->value, value);
+    node->name = (char *)malloc(strlen(name) + 1);
+    strncpy(node->name, name, strlen(name) + 1);
+    node->value = (char *)malloc(strlen(value) + 1);
+    strncpy(node->value, value, strlen(value) + 1);
     node->row_index = lineno;
     node->token_type = token_type;
     node->term_type = token_type == -1 ? 1 : 0;
