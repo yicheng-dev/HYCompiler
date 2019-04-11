@@ -257,7 +257,7 @@ Field_List *sem_def_list(AST_Node *node, int in_structure, int wrapped_layer){
     if (node->first_child){
         Field_List *field = sem_def(node->first_child, in_structure, wrapped_layer);
         Field_List *cur = field; // insert field_lists of a def after the front def
-        if (!cur)
+        if (!cur && in_structure)
             return NULL;
         if (in_structure){
             while(cur && cur->next){
@@ -281,8 +281,8 @@ Field_List *sem_def(AST_Node *node, int in_structure, int wrapped_layer){
 Field_List *sem_dec_list(AST_Node *node, Type *type, int in_structure, int wrapped_layer){
     assert(node && node->first_child);
     Field_List *field = sem_dec(node->first_child, type, in_structure, wrapped_layer);
-    if (field && node->first_child->sibling){
-        if (in_structure)
+    if (node->first_child->sibling){
+        if (field && in_structure)
             field->next = sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
         else
             sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
