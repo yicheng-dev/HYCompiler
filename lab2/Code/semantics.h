@@ -101,8 +101,8 @@ Type *sem_exp(AST_Node *);
 Type *sem_args(AST_Node *);
 
 /* helper functions */
-Field_List *insert_field_hash_table(unsigned, Type *, AST_Node *, int, int);
-Field_List *query_field_hash_table(unsigned, AST_Node *, int);
+Field_List *insert_field_hash_table(unsigned, char *, Type *, AST_Node *, int, int);
+Field_List *query_field_hash_table(unsigned, char *, AST_Node *, int);
 Func *insert_func_hash_table(unsigned, char *, Type *, Func *);
 Func *query_func_hash_table(unsigned, char *);
 Func *insert_func_dec_hash_table(unsigned, char *, Type *, Func *);

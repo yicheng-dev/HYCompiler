@@ -1,10 +1,31 @@
-struct S {
-  int a;
-  int b;
+struct S0 {
+  int S0_m0_a1_i[1];
+  int S0_m1_i;
+  int S0_m2_a1_i[1];
+  int S0_m3_i;
+  int S0_m4_i;
+  int S0_m5_a1_a1_i[1][1];
 };
 
-int main(){
-    struct S a;
-    struct S b;
-    a = b;
+int i_func_22(int i_func_22_i_0, struct S0 i_func_22_S0_0, float i_func_22_f_0, float i_func_22_f_1) {
+  int redef_L76;
+  /* Error Type 17 at Line 193784: use undefined struct */struct S89 L77;
+  float a2_f_L11[2];
+  int a1_i_L11[1];
+  float a1_f_L12[1];
+  int a1_a2_a1_a1_i_L0[1][2][1][1];
+  a2_f_L11[1] = -185463140;
+  a2_f_L11[0] = -1.713261e37;
+  a1_i_L11[0] = -1797760486;
+  a1_f_L12[0] = 2.253826e33;
+  a1_a2_a1_a1_i_L0[0][1][0][0] = 4.631161e10;
+  a1_a2_a1_a1_i_L0[0][0][0][0] = -1671310850;
+  a2_f_L11[a2_f_L11[537598090]/* Error Type 12 at Line 193795: subscript is not integer */] > (i_func_22_S0_0.S0_m1_i / i_func_22_S0_0.S0_m3_i);
+  {
+    (i_func_22_S0_0.S0_m4_i == a1_i_L11[a1_i_L11[a1_i_L11[a1_i_L11[a1_i_L11[i_func_22_S0_0.S0_m4_i]]]]]) >= (a1_i_L11[i_func_22_S0_0.S0_m4_i] || -589958514);
+    (a1_i_L11[a1_i_L11[i_func_22_S0_0.S0_m1_i]] / a1_i_L11[i_func_22_S0_0.S0_m1_i]) - i_func_22_S0_0.S0_m4_i;
+    65622864035840.000000;
+    (1616414785 >= i_func_22_S0_0.S0_m4_i) >= (1950841072 && i_func_22_S0_0.S0_m4_i);
+  }
+  return (a1_f_L12[i_func_22_S0_0.S0_m4_i] <= a1_f_L12[a1_i_L11[a1_i_L11[i_func_22_S0_0.S0_m4_i]]]) + (-344796453 + a1_i_L11[a1_i_L11[i_func_22_S0_0.S0_m4_i]]);
 }

@@ -55,12 +55,6 @@ void sem_ext_def(AST_Node *node){
                 return;
             func->return_type = type;
             unsigned hash_index = hash_pjw(func->name);
-            if (strcmp(func->name, "i_func_6995") == 0){
-                Log("6995: %d", hash_index);
-            }
-            else if (strcmp(func->name, "i_func_6989") == 0){
-                Log("6989: %d", hash_index);
-            }
             insert_func_hash_table(hash_index, func->name, type, func);
             sem_comp_st(node->first_child->sibling->sibling, 1, func);
             // Type *cur = func->ret_type_list;
@@ -115,7 +109,7 @@ Type* sem_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     if (strcmp(node->first_child->sibling->name, "Tag") == 0){
         AST_Node *tag_node = node->first_child->sibling->first_child;
         unsigned hash_index = hash_pjw(tag_node->value);
-        Field_List * field = query_field_hash_table(hash_index, tag_node, 1);
+        Field_List * field = query_field_hash_table(hash_index, tag_node->value, tag_node, 1);
         if (field)
             return field->type;
         return NULL;
@@ -131,7 +125,7 @@ Type* sem_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     }
     if (node->first_child->sibling->first_child){
         unsigned hash_index = hash_pjw(node->first_child->sibling->first_child->value);
-        insert_field_hash_table(hash_index, structure_type, node->first_child->sibling->first_child, wrapped_layer, 1);
+        insert_field_hash_table(hash_index, node->first_child->sibling->first_child->value, structure_type, node->first_child->sibling->first_child, wrapped_layer, 1);
     }
     return structure_type;
 }
@@ -156,7 +150,7 @@ Field_List *sem_var_dec(AST_Node *node, Type *type, int in_structure, int wrappe
         }
         else{
             unsigned hash_index = hash_pjw(node->first_child->value);
-            return insert_field_hash_table(hash_index, type, node->first_child, wrapped_layer, 0);
+            return insert_field_hash_table(hash_index, node->first_child->value, type, node->first_child, wrapped_layer, 0);
         }
     }
     else{
@@ -475,7 +469,7 @@ Type *sem_exp(AST_Node *node){
     else if (strcmp(node->first_child->name, "ID") == 0){
         if (!node->first_child->sibling){
             unsigned hash_index = hash_pjw(node->first_child->value);
-            Field_List *field = query_field_hash_table(hash_index, node->first_child, 0);
+            Field_List *field = query_field_hash_table(hash_index, node->first_child->value, node->first_child, 0);
             if (!field){
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "Undefined variable '%s'.\n", node->first_child->value);
@@ -486,7 +480,7 @@ Type *sem_exp(AST_Node *node){
         }
         unsigned hash_index = hash_pjw(node->first_child->value);
         Func *func = query_func_hash_table(hash_index, node->first_child->value);
-        Field_List *var = query_field_hash_table(hash_index, NULL, 0);
+        Field_List *var = query_field_hash_table(hash_index, node->first_child->value, NULL, 0);
         if (!func || func->defined == 0){
             if (var){
                 char info[MAX_ERROR_INFO_LEN];
@@ -547,48 +541,52 @@ Type *sem_args(AST_Node *node){
     return type;
 }
 
-Field_List *query_field_hash_table(unsigned hash_index, AST_Node *node, int look_for_structure){
+Field_List *query_field_hash_table(unsigned hash_index, char *str, AST_Node *node, int look_for_structure){
     Field_List *field_now = var_hash[hash_index];
     while(field_now != NULL){
-        if (field_now->is_structure == look_for_structure)
+        if (strcmp(field_now->name, str) == 0 && field_now->is_structure == look_for_structure)
             return field_now;
         field_now = field_now->next;
     }
     return NULL;
 }
 
-Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *node, int wrapped_layer, int is_structure){
+Field_List *insert_field_hash_table(unsigned hash_index, char *str, Type *type, AST_Node *node, int wrapped_layer, int is_structure){
     Field_List *new_field;
-    if (var_hash[hash_index] != NULL && var_hash[hash_index]->wrapped_layer >= wrapped_layer){
-        char info[MAX_ERROR_INFO_LEN];
-        if (is_structure){
-            sprintf(info, "redefinition of '%s'.\n", node->value);
-            add_error_list(16, info, node->row_index);
+    Field_List *cur = var_hash[hash_index];
+    while (cur){
+        if (strcmp(cur->name, str) == 0){
+            if (cur->wrapped_layer >= wrapped_layer){
+                char info[MAX_ERROR_INFO_LEN];
+                if (is_structure){
+                    sprintf(info, "redefinition of '%s'.\n", node->value);
+                    add_error_list(16, info, node->row_index);
+                }
+                else{
+                    sprintf(info, "redefinition of '%s'.\n", node->value);
+                    add_error_list(3, info, node->row_index);
+                }
+                return NULL;
+            }
+            else{
+                break;
+            }
         }
-        else{
-            sprintf(info, "redefinition of '%s'.\n", node->value);
-            add_error_list(3, info, node->row_index);
-        }
-        return NULL;
+        cur = cur->next;
     }
-    else{
-        new_field = malloc(sizeof(Field_List));
-        strcpy(new_field->name, node->value);
-        new_field->type = type;
-        new_field->wrapped_layer = wrapped_layer;
-        new_field->is_structure = is_structure;
-        new_field->line_num = node->row_index;
-        new_field->next = var_hash[hash_index];
-        var_hash[hash_index] = new_field;
-        return new_field;
-    }
+    new_field = malloc(sizeof(Field_List));
+    strcpy(new_field->name, node->value);
+    new_field->type = type;
+    new_field->wrapped_layer = wrapped_layer;
+    new_field->is_structure = is_structure;
+    new_field->line_num = node->row_index;
+    new_field->next = var_hash[hash_index];
+    var_hash[hash_index] = new_field;
+    return new_field;            
 }
 
 Func *insert_func_hash_table(unsigned hash_index, char *str, Type *return_type, Func *func){
     Func *cur = func_hash[hash_index];
-    if (strcmp(func->name, "i_func_6989") == 0 && cur){
-        Log("6989: %d\t%s\t%d\t%d", hash_index, cur->name, cur->defined, cur->line_num);
-    }
     if (cur == NULL){
         func->return_type = return_type;
         func->defined = 1;
@@ -784,16 +782,25 @@ void check_undec_func(){
 
 void pop_local_var(int wrapped_layer){
     int i;
-    Field_List *new_head;
     for (i = 0; i < MAX_HASH_TABLE_LEN; i ++){
-        if (var_hash[i] != NULL && var_hash[i]->wrapped_layer == wrapped_layer){
-            new_head = var_hash[i]->next;
-            if (new_head != NULL){
-                var_hash[i] = new_head;
-            }
-            else
-                var_hash[i] = NULL;
+        Field_List *elem = var_hash[i];
+        Field_List *temp = NULL;
+        if (elem == NULL)
+            continue;
+        while (elem && elem->wrapped_layer == wrapped_layer){
+            var_hash[i] = elem->next;
+            elem = var_hash[i];
         }
+		while (elem != NULL){
+			temp = elem;
+			elem = elem->next;
+            if (elem == NULL){
+                break;
+            }
+			else if(elem->wrapped_layer == wrapped_layer){
+			    temp->next = elem->next;
+		    }
+		}    
     }
 }
 
@@ -841,6 +848,7 @@ void add_error_list(int type, char *info, int line_num){
 void print_error_list(){
     Error_List *cur = error_head;
     while (cur){
+        //if (cur->type != 5 && cur->type != 7 && cur->type != 2 && cur->type != 9)
         printf("Error type %d at Line %d: %s", cur->type, cur->line_num, cur->info);
         cur = cur->next;
     }
