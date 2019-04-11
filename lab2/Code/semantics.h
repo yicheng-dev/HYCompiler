@@ -47,6 +47,7 @@ struct Func {
     int param_size;
     struct Field_List *first_param;
     int line_num;
+    struct Func *next; // list in hash table
 };
 
 struct Sem_Error_List {
@@ -102,8 +103,8 @@ Type *sem_args(AST_Node *);
 /* helper functions */
 Field_List *insert_field_hash_table(unsigned, Type *, AST_Node *, int, int);
 Field_List *query_field_hash_table(unsigned, AST_Node *, int);
-Func *insert_func_hash_table(unsigned, Type *, Func *);
-Func *query_func_hash_table(unsigned);
+Func *insert_func_hash_table(unsigned, char *, Type *, Func *);
+Func *query_func_hash_table(unsigned, char *);
 Func *insert_func_dec_hash_table(unsigned, Type *, Func *);
 int check_equal_type(Type *, Type *);
 int check_struct_equal_type(Type *, Type *);

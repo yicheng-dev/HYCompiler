@@ -61,7 +61,7 @@ void sem_ext_def(AST_Node *node){
             else if (strcmp(func->name, "i_func_6989") == 0){
                 Log("6989: %d", hash_index);
             }
-            insert_func_hash_table(hash_index, type, func);
+            insert_func_hash_table(hash_index, func->name, type, func);
             sem_comp_st(node->first_child->sibling->sibling, 1, func);
             // Type *cur = func->ret_type_list;
             // while (cur){
@@ -485,7 +485,7 @@ Type *sem_exp(AST_Node *node){
             return field->type;
         }
         unsigned hash_index = hash_pjw(node->first_child->value);
-        Func *func = query_func_hash_table(hash_index);
+        Func *func = query_func_hash_table(hash_index, node->first_child->value);
         Field_List *var = query_field_hash_table(hash_index, NULL, 0);
         if (!func || func->defined == 0){
             if (var){
@@ -584,40 +584,55 @@ Field_List *insert_field_hash_table(unsigned hash_index, Type *type, AST_Node *n
     }
 }
 
-Func *insert_func_hash_table(unsigned hash_index, Type *return_type, Func *func){
-    Func *func_head = func_hash[hash_index];
-    if (strcmp(func->name, "i_func_6989") == 0 && func_head){
-        Log("6989: %d\t%s\t%d\t%d", hash_index, func_head->name, func_head->defined, func_head->line_num);
+Func *insert_func_hash_table(unsigned hash_index, char *str, Type *return_type, Func *func){
+    Func *cur = func_hash[hash_index];
+    if (strcmp(func->name, "i_func_6989") == 0 && cur){
+        Log("6989: %d\t%s\t%d\t%d", hash_index, cur->name, cur->defined, cur->line_num);
     }
-    if (func_head){
-        if (func_head->defined){
-            char info[MAX_ERROR_INFO_LEN];
-            sprintf(info, "Redefined function '%s'.\n", func->name);
-            add_error_list(4, info, func->line_num);
-            return NULL;
-        }
-        else{
-            if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
+    if (cur == NULL){
+        func->return_type = return_type;
+        func->defined = 1;
+        func_hash[hash_index] = func;
+        return func;
+    }
+    while (cur){
+        if (strcmp(cur->name, str) == 0){
+            if (cur->defined){
                 char info[MAX_ERROR_INFO_LEN];
-                sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
-                add_error_list(19, info, func->line_num);
+                sprintf(info, "Redefined function '%s'.\n", func->name);
+                add_error_list(4, info, func->line_num);
                 return NULL;
             }
-            func_hash[hash_index]->defined = 1;
-            return func_hash[hash_index];
+            else{
+                if (!check_equal_type(return_type, cur->return_type) || !check_twofunc_equal_params(func->first_param, cur->first_param)){
+                    char info[MAX_ERROR_INFO_LEN];
+                    sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
+                    add_error_list(19, info, func->line_num);
+                    return NULL;
+                }
+                func_hash[hash_index]->defined = 1;
+                return func_hash[hash_index];
+            }
         }
+        cur = cur->next; 
     }
+    // if the list is not null and there are functions whose names are equal with func
     func->return_type = return_type;
     func->defined = 1;
+    func->next = func_hash[hash_index];
     func_hash[hash_index] = func;
-    func_head = func_hash[hash_index];
-    if (strcmp(func->name, "i_func_6995") == 0){
-        Log("6995: %d\t%s\t%d\t%d", hash_index, func_head->name, func_head->defined, func_head->line_num);
-    }
     return func;
 }
 
-Func *query_func_hash_table(unsigned hash_index){
+Func *query_func_hash_table(unsigned hash_index, char *str){
+    Func *cur = func_hash[hash_index];
+    if (cur == NULL)
+        return NULL;
+    while (cur){
+        if (strcmp(str, cur->name) == 0)
+            return cur;
+        cur = cur->next;
+    }
     return func_hash[hash_index];
 }
 
