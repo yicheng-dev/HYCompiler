@@ -82,7 +82,7 @@ void sem_ext_def(AST_Node *node){
             if (!func)
                 return;
             unsigned hash_index = hash_pjw(func->name);
-            insert_func_dec_hash_table(hash_index, type, func);
+            insert_func_dec_hash_table(hash_index, func->name, type, func);
             pop_local_var(1);
         }
     }
@@ -610,8 +610,8 @@ Func *insert_func_hash_table(unsigned hash_index, char *str, Type *return_type, 
                     add_error_list(19, info, func->line_num);
                     return NULL;
                 }
-                func_hash[hash_index]->defined = 1;
-                return func_hash[hash_index];
+                cur->defined = 1;
+                return cur;
             }
         }
         cur = cur->next; 
@@ -636,19 +636,23 @@ Func *query_func_hash_table(unsigned hash_index, char *str){
     return func_hash[hash_index];
 }
 
-Func *insert_func_dec_hash_table(unsigned hash_index, Type *return_type, Func *func){
-    Func *func_head = func_hash[hash_index];
-    if (func_head){
-        if (!check_equal_type(return_type, func_head->return_type) || !check_twofunc_equal_params(func->first_param, func_head->first_param)){
-            char info[MAX_ERROR_INFO_LEN];
-            sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
-            add_error_list(19, info, func->line_num);
-            return NULL;
+Func *insert_func_dec_hash_table(unsigned hash_index, char *str, Type *return_type, Func *func){
+    Func *cur = func_hash[hash_index];
+    while (cur){
+        if (strcmp(cur->name, str) == 0){
+            if (!check_equal_type(return_type, cur->return_type) || !check_twofunc_equal_params(func->first_param, cur->first_param)){
+                char info[MAX_ERROR_INFO_LEN];
+                sprintf(info, "Inconsistent declaration of function '%s'.\n", func->name);
+                add_error_list(19, info, func->line_num);
+                return NULL;
+            }
+            return cur;
         }
-        return func_hash[hash_index];
+        cur = cur->next;
     }
     func->defined = 0;
     func->return_type = return_type;
+    func->next = func_hash[hash_index];
     func_hash[hash_index] = func;
     return func;
 }
