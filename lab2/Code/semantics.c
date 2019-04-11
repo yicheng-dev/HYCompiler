@@ -297,7 +297,8 @@ Field_List *sem_dec(AST_Node *node, Type *type, int in_structure, int wrapped_la
             char info[MAX_ERROR_INFO_LEN];
             sprintf(info, "initialization of fields in a structure.\n");
             add_error_list(15, info, node->first_child->sibling->row_index);
-            return NULL;
+            Field_List *var_dec_field = sem_var_dec(node->first_child, type, in_structure, wrapped_layer);
+            return var_dec_field;
         }
         Field_List *var_dec_field = sem_var_dec(node->first_child, type, in_structure, wrapped_layer);
         if (var_dec_field){
@@ -481,8 +482,9 @@ Type *sem_exp(AST_Node *node){
         unsigned hash_index = hash_pjw(node->first_child->value);
         Func *func = query_func_hash_table(hash_index, node->first_child->value);
         Field_List *var = query_field_hash_table(hash_index, node->first_child->value, NULL, 0);
+        
         if (!func || func->defined == 0){
-            if (var){
+            if (!func && var){
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "'%s' is not a function.\n", node->first_child->value);
                 add_error_list(11, info, node->first_child->sibling->row_index);
@@ -631,7 +633,7 @@ Func *query_func_hash_table(unsigned hash_index, char *str){
             return cur;
         cur = cur->next;
     }
-    return func_hash[hash_index];
+    return NULL;
 }
 
 Func *insert_func_dec_hash_table(unsigned hash_index, char *str, Type *return_type, Func *func){
