@@ -107,6 +107,7 @@ Func *insert_func_hash_table(unsigned, char *, Type *, Func *);
 Func *query_func_hash_table(unsigned, char *);
 Func *insert_func_dec_hash_table(unsigned, char *, Type *, Func *);
 int check_equal_type(Type *, Type *);
+int check_struct_equal_type_naive(Type *, Type *);
 int check_struct_equal_type(Type *, Type *);
 int check_duplicate_field(Type *);
 int check_equal_params(Field_List *, Type *);

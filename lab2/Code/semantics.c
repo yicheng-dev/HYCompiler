@@ -670,7 +670,8 @@ int check_equal_type(Type *type1, Type *type2){
         return 0;
     }
     if (type1->kind == STRUCTURE && type2->kind == STRUCTURE){
-        return check_struct_equal_type(type1, type2);
+        //return check_struct_equal_type(type1, type2);
+        return check_struct_equal_type_naive(type1, type2);
     }
     if (type1->kind == ARRAY && type2->kind == ARRAY){
         int dim1 = 0, dim2 = 0;
@@ -690,6 +691,22 @@ int check_equal_type(Type *type1, Type *type2){
         return check_equal_type(type11, type22);
     }
     return 0;
+}
+
+int check_struct_equal_type_naive(Type *type1, Type *type2){
+    Field_List *cur1 = type1->u.structure.first_field;
+    Field_List *cur2 = type2->u.structure.first_field;
+
+    while (cur1 && cur2){
+        if (!check_equal_type(cur1->type, cur2->type))
+            return 0;
+        cur1 = cur1->next;
+        cur2 = cur2->next;
+    }
+    if (cur1 || cur2){
+        return 0;
+    }
+    return 1;
 }
 
 int check_struct_equal_type(Type *type1, Type *type2){
