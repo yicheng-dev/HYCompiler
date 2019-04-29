@@ -9,6 +9,7 @@
 #define MAX_FIELD_NUM 256
 
 #include "AST.h"
+#include "ir.h"
 
 struct Type {
     enum {
@@ -38,6 +39,7 @@ struct Field_List {
     int wrapped_layer;
     int is_structure;
     int line_num;
+    struct Operand *op;
 };
 
 struct Func {
@@ -48,6 +50,7 @@ struct Func {
     struct Field_List *first_param;
     int line_num;
     struct Func *next; // list in hash table
+    struct Operand *op;
 };
 
 struct Sem_Error_List {
