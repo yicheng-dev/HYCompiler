@@ -299,12 +299,9 @@ InterCode *ir_stmt(AST_Node *node, int wrapped_layer) {
 
 InterCode *ir_exp(AST_Node *node, Operand *place) {
     assert(node && node->first_child);
-    Log("1");
     if (strcmp(node->first_child->name, "Exp") == 0 || strcmp(node->first_child->name, "NOT") == 0) {
-        Log("2");
         if (strcmp(node->first_child->name, "Exp") == 0) {
             if (strcmp(node->first_child->sibling->name, "ASSIGNOP") == 0){
-                Log("88");
                 Field_List *variable;
                 if (strcmp(node->first_child->first_child->name, "ID") == 0 && node->first_child->first_child->sibling == NULL) {
                     // ID
@@ -367,7 +364,6 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
             || (strcmp(node->first_child->name, "Exp") == 0 && strcmp(node->first_child->sibling->name, "OR") == 0)
             || (strcmp(node->first_child->name, "Exp") == 0 && strcmp(node->first_child->sibling->name, "RELOP") == 0)
             || (strcmp(node->first_child->name, "NOT") == 0)){
-            Log("3");
             Operand *label1 = make_label();
             Operand *label2 = make_label();
             InterCode *code0 = make_ir(IR_ASSIGN, place, make_constant(0), NULL, NULL);
@@ -389,36 +385,26 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
         return NULL;
     }
     else if (strcmp(node->first_child->name, "LP") == 0){
-        Log("4");
         return ir_exp(node->first_child->sibling, place);
     }
     else if (strcmp(node->first_child->name, "MINUS") == 0){
-        Log("5");
         Operand *t1 = make_temp();
         InterCode *code1 = ir_exp(node->first_child->sibling, t1);
         InterCode *code2 = make_ir(IR_SUB, place, make_constant(0), t1, NULL);
         return bind(code1, code2);
     }
     else if (strcmp(node->first_child->name, "ID") == 0){
-        Log("6");
-        Log("%s", node->first_child->value);
         if (node->first_child->sibling == NULL) {
-            Log("61");
-            Log("%s", node->first_child->value);
             Field_List *variable = ir_query_field_hash_table(hash_pjw(node->first_child->value), node->first_child->value, node->first_child, 0);
-            Log("611");
             assert(variable);
             return make_ir(IR_ASSIGN, place, variable->op, NULL, NULL);
         }
         if (strcmp(node->first_child->sibling->sibling->name, "Args") == 0){
-            Log("62");
             Func *function = ir_query_func_hash_table(hash_pjw(node->first_child->value), node->first_child->value);
             arg_list_head = NULL;
             InterCode *code1 = ir_args(node->first_child->sibling->sibling);
             if (strcmp(function->name, "write") == 0) {
                 assert(arg_list_head);
-                Log("%p", arg_list_head);
-                Log("%d", arg_list_head->kind);
                 return bind(code1, make_ir(IR_WRITE, arg_list_head, NULL, NULL, NULL));
             }
             Operand *cur = arg_list_head;
@@ -427,11 +413,9 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 code2 = bind(code2, make_ir(IR_ARG, cur, NULL, NULL, NULL));
                 cur = cur->next;
             }
-            Log("func->name: %s", function->op->u.func.func->name);
             return bind(bind(code1, code2), make_ir(IR_CALL, place, function->op, NULL, NULL));
         }
         else {
-            Log("63");
             Func *function = ir_query_func_hash_table(hash_pjw(node->first_child->value), node->first_child->value);
             if (strcmp(function->name, "read") == 0) {
                 return make_ir(IR_READ, place, NULL, NULL, NULL);
@@ -440,13 +424,10 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
         }
     }
     else if (strcmp(node->first_child->name, "INT") == 0){
-        Log("7");
         Operand *value = make_constant(atoi(node->first_child->value));
-        Log("71");
         return make_ir(IR_ASSIGN, place, value, NULL, NULL);
     }
     else if (strcmp(node->first_child->name, "FLOAT") == 0){
-        Log("8");
         assert(0); // undefined
         return NULL;
     }
@@ -769,7 +750,6 @@ InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operan
     default:
         break;
     }
-    Log("%d", code->kind);
     if (ir_head == NULL)
         ir_head = code;
     return code;
@@ -784,7 +764,6 @@ void to_file(FILE *fp) {
 }
 
 char *show_ir(InterCode *code) {
-    Log("%d", code->kind);
     char *buffer = malloc(50 * sizeof(char));
     switch (code->kind) {
     case IR_LABEL: sprintf(buffer, "LABEL %s :\n", show_op(code->u.nonop.result)); break;
@@ -805,10 +784,10 @@ char *show_ir(InterCode *code) {
     case IR_RETURN: sprintf(buffer, "RETURN %s\n", show_op(code->u.nonop.result)); break;
     case IR_DEC: // TODO:
         break;
-    case IR_CALL: Log("fuck"); sprintf(buffer, "%s := CALL %s\n", show_op(code->u.sinop.result), show_op(code->u.sinop.op)); Log("shit"); break;
+    case IR_CALL: sprintf(buffer, "%s := CALL %s\n", show_op(code->u.sinop.result), show_op(code->u.sinop.op)); break;
     case IR_PARAM: sprintf(buffer, "PARAM %s\n", show_op(code->u.nonop.result)); break;
     case IR_READ: sprintf(buffer, "READ %s\n", show_op(code->u.nonop.result)); break;
-    case IR_WRITE: Log("fuck"); sprintf(buffer, "WRITE %s\n", show_op(code->u.nonop.result)); Log("shit"); break;
+    case IR_WRITE: sprintf(buffer, "WRITE %s\n", show_op(code->u.nonop.result)); break;
     default:
         break;
     }
@@ -816,7 +795,6 @@ char *show_ir(InterCode *code) {
 }
 
 char *show_op(Operand *op) {
-    Log("%d", op->kind);
     char *buffer = malloc(30 * sizeof(char));
     switch (op->kind) {
     case OP_VARIABLE: sprintf(buffer, "v%d", op->u.var.no); break;
