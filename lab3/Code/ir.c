@@ -410,11 +410,9 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 Operand *t3 = make_temp();
                 InterCode *code3 = make_ir(IR_MUL, t3, t2, make_constant(size_of_array(node)), NULL);
                 InterCode *code4;
-                if (node->sibling && strcmp(node->sibling->name, "LB") != 0 && strcmp(node->sibling->name, "ASSIGNOP") != 0) {
-                    Operand *t4 = make_temp();
-                    code4 = bind(make_ir(IR_ADD, t4, t1, t3, NULL), make_ir(IR_DEREF_ASSIGN, place, t4, NULL, NULL));
-                }
-                else if (node->sibling && strcmp(node->sibling->name, "LB") == 0){
+                Type *type = ir_exp_type(node);
+                assert(type);
+                if (type->kind != BASIC){
                     code4 = make_ir(IR_ADD, place, t1, t3, NULL);
                 }
                 else if (node->sibling && strcmp(node->sibling->name, "ASSIGNOP") == 0){
@@ -442,8 +440,40 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                     );
             }
             else if (strcmp(node->first_child->sibling->name, "DOT") == 0){
-                //TODO:
-                return NULL;   
+                Type *structure_type = ir_exp_type(node->first_child);
+                Type *type = ir_exp_type(node);
+                assert(structure_type && structure_type->kind == STRUCTURE);
+                assert(type);
+                Operand *t1 = make_temp();
+                InterCode *code1 = ir_exp(node->first_child, t1);
+                Field_List *cur_field = structure_type->u.structure.first_field;
+                while (cur_field != NULL) {
+                    if (strcmp(cur_field->name, node->first_child->sibling->sibling->value) == 0) {
+                        break;
+                    }
+                    cur_field = cur_field->next;
+                }
+                assert(cur_field);
+                Operand *offset = make_constant(cur_field->offset);
+                InterCode *code2;
+                if (type->kind != BASIC) {
+                    code2 = make_ir(IR_ADD, place, t1, offset, NULL);
+                }
+                else if (node->sibling && strcmp(node->sibling->name, "ASSIGNOP") == 0) {
+                    Operand *t2 = make_temp();
+                    Operand *t3 = make_temp();
+                    if (place == NULL) {
+                        code2 = bind(bind(make_ir(IR_ADD, t2, t1, offset, NULL), ir_exp(node->sibling->sibling, t3)), make_ir(IR_ASSIGN_TO_DEREF, t2, t3, NULL, NULL));
+                    }
+                    else {
+                        code2 = bind(bind(bind(make_ir(IR_ADD, t2, t1, offset, NULL), ir_exp(node->sibling->sibling, t3)), make_ir(IR_ASSIGN_TO_DEREF, t2, t3, NULL, NULL)), make_ir(IR_DEREF_ASSIGN, place, t2, NULL, NULL));
+                    }
+                }
+                else {
+                    Operand *t2 = make_temp();
+                    code2 = bind(make_ir(IR_ADD, t2, t1, offset, NULL), make_ir(IR_DEREF_ASSIGN, place, t2, NULL, NULL));
+                }
+                return bind(code1, code2);
             }
         }
         if ((strcmp(node->first_child->name, "Exp") == 0 && strcmp(node->first_child->sibling->name, "AND") == 0)
@@ -483,11 +513,6 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
         if (node->first_child->sibling == NULL) {
             Field_List *variable = ir_query_field_hash_table(hash_pjw(node->first_child->value), node->first_child->value, node->first_child, 0);
             assert(variable);
-            /*
-            if (variable->type->kind == BASIC)
-                return make_ir(IR_ASSIGN, place, variable->op, NULL, NULL);
-            else
-                return make_ir(IR_DEREF_ASSIGN, place, variable->op, NULL, NULL);*/
             return make_ir(IR_ASSIGN, place, variable->op, NULL, NULL);
         }
         if (strcmp(node->first_child->sibling->sibling->name, "Args") == 0){
@@ -761,12 +786,38 @@ int build_size_offset(Type *structure_type) {
     int offset = 0;
     while (field != NULL) {
         field->offset = offset;
-        offset += 4;
-        if (field->type->kind == STRUCTURE) {
-            field->type->u.structure.size = build_size_offset(field->type);
+        if (field->type->kind == BASIC) {
+            offset += 4;
         }
+        else if (field->type->kind == ARRAY) {
+            offset += size_of_array_type(field->type);
+        }
+        else {
+            assert(field->type->kind == STRUCTURE);
+            field->type->u.structure.size = build_size_offset(field->type);
+            offset += field->type->u.structure.size;
+        }
+        field = field->next;
     }
-    return offset + 4;
+    return offset;
+}
+
+int size_of_array_type(Type *type) {
+    int size = 1;
+    Type *cur_type = type;
+    while (cur_type && cur_type->kind == ARRAY) {
+        size *= cur_type->u.array.size;
+        cur_type = cur_type->u.array.elem;
+    }
+    assert(cur_type);
+    if (cur_type->kind == BASIC) {
+        size *= 4;
+    }
+    else {
+        assert(cur_type->kind == STRUCTURE);
+        size *= cur_type->u.structure.size;
+    }
+    return size;
 }
 
 InterCode *bind(InterCode *code1, InterCode *code2) {
