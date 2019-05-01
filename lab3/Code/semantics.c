@@ -454,8 +454,6 @@ Type *sem_exp(AST_Node *node){
                 Field_List *cur = type->u.structure.first_field;
                 while (cur){
                     if (strcmp(cur->name, node->first_child->sibling->sibling->value) == 0){
-                        if (strcmp("b7p6y_i", cur->name) == 0){
-                        }
                         return cur->type;
                     }
                     cur = cur->next;

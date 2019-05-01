@@ -197,15 +197,27 @@ InterCode *ir_dec(AST_Node *node, Type *type, int wrapped_layer) {
     else{
         Field_List *variable = ir_var_dec(node->first_child, type, 0, wrapped_layer);
         if (variable->type->kind == STRUCTURE) {
-            //TODO:
+            variable->op = make_addr(variable->op, 0);
+            int size = variable->type->u.structure.size;
+            Operand *op_size = make_constant(size);
+            InterCode *code = make_ir(IR_DEC, variable->op, op_size, NULL, NULL);
+            return code;
         }
         else if (variable->type->kind == ARRAY) {
-            int size = 4;
+            int size = 1;
             variable->op = make_addr(variable->op, 0);
             Type *cur_type = variable->type;
             while (cur_type && cur_type->kind == ARRAY) {
                 size *= cur_type->u.array.size;
                 cur_type = cur_type->u.array.elem;
+            }
+            assert(cur_type);
+            if (cur_type->kind == BASIC) {
+                size *= 4;
+            }
+            else {
+                assert(cur_type->kind == STRUCTURE);
+                size *= cur_type->u.structure.size;
             }
             Operand *op_size = make_constant(size);
             InterCode *code = make_ir(IR_DEC, variable->op, op_size, NULL, NULL);
@@ -396,7 +408,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 Operand *t2 = make_temp();
                 InterCode *code2 = ir_exp(node->first_child->sibling->sibling, t2);
                 Operand *t3 = make_temp();
-                InterCode *code3 = bind(make_ir(IR_MUL, t3, t2, make_constant(4), NULL), make_ir(IR_MUL, t3, t3, make_constant(size_of_array(node)), NULL));
+                InterCode *code3 = make_ir(IR_MUL, t3, t2, make_constant(size_of_array(node)), NULL);
                 InterCode *code4;
                 if (node->sibling && strcmp(node->sibling->name, "LB") != 0 && strcmp(node->sibling->name, "ASSIGNOP") != 0) {
                     Operand *t4 = make_temp();
@@ -513,6 +525,85 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
     return NULL;
 }
 
+Type *ir_exp_type(AST_Node *node){
+    assert(node && node->first_child);
+    if (strcmp(node->first_child->name, "Exp") == 0){
+        if (strcmp(node->first_child->sibling->name, "ASSIGNOP") == 0){
+            Type *type1 = ir_exp_type(node->first_child);
+            return type1;
+        }
+        else if (strcmp(node->first_child->sibling->name, "AND") == 0
+            || strcmp(node->first_child->sibling->name, "OR") == 0){
+            Type *type1 = ir_exp_type(node->first_child);
+            return type1;
+        }
+        else if (strcmp(node->first_child->sibling->name, "PLUS") == 0
+            || strcmp(node->first_child->sibling->name, "MINUS") == 0
+            || strcmp(node->first_child->sibling->name, "STAR") == 0
+            || strcmp(node->first_child->sibling->name, "DIV") == 0
+            || strcmp(node->first_child->sibling->name, "RELOP") == 0){
+            Type *type1 = ir_exp_type(node->first_child);
+            return type1;
+        }
+        else if (strcmp(node->first_child->sibling->name, "LB") == 0 && strcmp(node->first_child->sibling->sibling->name, "Exp") == 0){
+            Type *type = ir_exp_type(node->first_child);
+            assert(type);
+            return type->u.array.elem;
+        }
+        else if (strcmp(node->first_child->sibling->name, "DOT") == 0){
+            Type *type = ir_exp_type(node->first_child);
+            assert(type && type->kind == STRUCTURE);
+            Field_List *cur = type->u.structure.first_field;
+            while (cur){
+                if (strcmp(cur->name, node->first_child->sibling->sibling->value) == 0){
+                    return cur->type;
+                }
+                cur = cur->next;
+            }
+            assert(0);
+            return NULL;
+        }
+    }
+    else if (strcmp(node->first_child->name, "LP") == 0){
+        return ir_exp_type(node->first_child->sibling);
+    }
+    else if (strcmp(node->first_child->name, "MINUS") == 0){
+        return ir_exp_type(node->first_child->sibling);
+    }
+    else if (strcmp(node->first_child->name, "NOT") == 0){
+        Type *type = ir_exp_type(node->first_child->sibling);
+        assert(type);
+        Type *new_type = (Type *)malloc(sizeof(Type));
+        new_type->kind = BASIC;
+        new_type->u.basic = BASIC_INT;
+        return new_type;
+    }
+    else if (strcmp(node->first_child->name, "ID") == 0){
+        if (!node->first_child->sibling){
+            unsigned hash_index = hash_pjw(node->first_child->value);
+            Field_List *field = ir_query_field_hash_table(hash_index, node->first_child->value, node->first_child, 0);
+            assert(field);
+            return field->type;
+        }
+        unsigned hash_index = hash_pjw(node->first_child->value);
+        Func *func = ir_query_func_hash_table(hash_index, node->first_child->value);
+        return func->return_type;
+    }
+    else if (strcmp(node->first_child->name, "INT") == 0){
+        Type *type = (Type *)malloc(sizeof(Type));
+        type->kind = BASIC;
+        type->u.basic = BASIC_INT;
+        return type;
+    }
+    else if (strcmp(node->first_child->name, "FLOAT") == 0){
+        Type *type = (Type *)malloc(sizeof(Type));
+        type->kind = BASIC;
+        type->u.basic = BASIC_FLOAT;
+        return type;
+    }
+    return NULL;
+}
+
 InterCode *ir_cond(AST_Node *node, Operand *label_true, Operand *label_false) {
     assert(node);
     if (strcmp(node->first_child->name, "Exp") == 0) {
@@ -584,6 +675,7 @@ Type* ir_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure){
     Type *structure_type = (Type *)malloc(sizeof(Type));
     structure_type->kind = STRUCTURE;
     structure_type->u.structure.first_field = ir_def_list_structure(node->first_child->sibling->sibling->sibling, wrapped_layer);
+    structure_type->u.structure.size = build_size_offset(structure_type);
     structure_type->line_num = node->first_child->sibling->sibling->sibling->row_index;
     if (node->first_child->sibling->first_child){
         unsigned hash_index = hash_pjw(node->first_child->sibling->first_child->value);
@@ -661,6 +753,20 @@ Field_List *ir_var_dec(AST_Node *node, Type *type, int in_structure, int wrapped
         array_type->u.array.elem = type;
         return ir_var_dec(node->first_child, array_type, in_structure, wrapped_layer);
     }
+}
+
+int build_size_offset(Type *structure_type) {
+    assert(structure_type && structure_type->kind == STRUCTURE);
+    Field_List *field = structure_type->u.structure.first_field;
+    int offset = 0;
+    while (field != NULL) {
+        field->offset = offset;
+        offset += 4;
+        if (field->type->kind == STRUCTURE) {
+            field->type->u.structure.size = build_size_offset(field->type);
+        }
+    }
+    return offset + 4;
 }
 
 InterCode *bind(InterCode *code1, InterCode *code2) {
@@ -846,34 +952,39 @@ InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operan
     return code;
 }
 
+// int size_of_structure(Type *structure_type) {
+//     assert(structure_type && structure_type->kind == STRUCTURE);
+//     int size = 0;
+//     Field_List *field = structure_type->u.structure.first_field;
+//     while (field) {
+//         if (field->type->kind == BASIC) {
+//             size += 4;
+//         }
+//         else if (field->type->kind == ARRAY) {
+//             size += 
+//         }
+//     }
+    
+    
+// }
+
 int size_of_array(AST_Node *node) {
-    assert(node);
-    if (node->sibling == NULL || strcmp(node->sibling->name, "LB") != 0) {
-        return 1;
+    int size = 1;
+    Type *type = ir_exp_type(node);
+    Type *cur_type = type;
+    while (cur_type && cur_type->kind == ARRAY) {
+        size *= cur_type->u.array.size;
+        cur_type = cur_type->u.array.elem;
+    }
+    assert(cur_type);
+    if (cur_type->kind == BASIC) {
+        size *= 4;
     }
     else {
-        // 假设高维数组都是 Exp -> Exp LB Exp RB | ID LB Exp RB | ... 的形式
-        int dim = 0;
-        int size = 1;
-        AST_Node *cur_node = node;
-        while (cur_node && strcmp(cur_node->name, "Exp") == 0) {
-            cur_node = cur_node->first_child;
-            dim ++;
-        }
-        assert(cur_node && strcmp(cur_node->name, "ID") == 0);
-        Field_List *array_var = ir_query_field_hash_table(hash_pjw(cur_node->value), cur_node->value, cur_node, 0);
-        assert(array_var && array_var->type->kind == ARRAY);
-        Type *cur_type = array_var->type;
-        int cur_dim = 0;
-        while (cur_type && cur_type->kind == ARRAY) {
-            if (cur_dim >= dim - 1) {
-                size *= cur_type->u.array.size;
-            }
-            cur_type = cur_type->u.array.elem;
-            cur_dim ++;
-        }
-        return size;
+        assert(cur_type->kind == STRUCTURE);
+        size *= cur_type->u.structure.size;
     }
+    return size;
 }
 
 void to_file(FILE *fp) {

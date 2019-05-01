@@ -108,6 +108,7 @@ InterCode *ir_dec(AST_Node *node, struct Type *type, int wrapped_layer);
 InterCode *ir_stmt_list(AST_Node *node, int wrapped_layer);
 InterCode *ir_stmt(AST_Node *node, int wrapped_layer);
 InterCode *ir_exp(AST_Node *node, Operand *place);
+struct Type *ir_exp_type(AST_Node *node);
 InterCode *ir_cond(AST_Node *node, Operand *label_true, Operand *label_false);
 InterCode *ir_args(AST_Node *node);
 struct Type* ir_struct_specifier(AST_Node *node, int wrapped_layer, int in_structure);
@@ -120,6 +121,7 @@ struct Field_List *ir_var_dec(AST_Node *node, struct Type *type, int in_structur
 
 
 /* helper functions */
+int build_size_offset(struct Type *structure_type);
 InterCode *bind(InterCode *, InterCode *);
 struct Field_List *ir_insert_field_hash_table(unsigned hash_index, char *str, struct Type *type, AST_Node *node, int wrapped_layer, int is_structure);
 struct Func *ir_insert_func_hash_table(unsigned hash_index, char *str, struct Type *return_type, struct Func *func);

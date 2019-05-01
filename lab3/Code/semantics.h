@@ -24,6 +24,7 @@ struct Type {
         struct {
             struct Field_List *first_field;
             struct Type *first_flat;
+            int size;
         } structure;
     } u;
     struct Type *next_ret_type; // multiple return type in a CompSt
@@ -39,6 +40,7 @@ struct Field_List {
     int wrapped_layer;
     int is_structure;
     int line_num;
+    int offset;
     struct Operand *op;
 };
 
