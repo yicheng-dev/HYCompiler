@@ -34,6 +34,12 @@ struct Operand {
         struct {
             char content[5];
         } relop;
+        struct {
+            int no;
+            int val_kind;
+            struct Field_List *field;
+            int ref_hidden;
+        } address;
     } u;
     struct Operand *next;
 };
@@ -121,11 +127,13 @@ struct Func *ir_query_func_hash_table(unsigned hash_index, char *str);
 struct Field_List *ir_query_field_hash_table(unsigned hash_index, char *str, AST_Node *node, int look_for_structure);
 Operand *make_temp();
 Operand *make_var(struct Field_List *field);
+Operand *make_addr(struct Operand *var, int ref_hidden);
 Operand *make_func(struct Func *func);
 Operand *make_label();
 Operand *make_constant(int val);
 Operand *make_relop(char *content);
 InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operand *relop);
+int size_of_array(AST_Node *node);
 void to_file(FILE *fp);
 char *show_ir(InterCode *code);
 char *show_op(Operand *op);
