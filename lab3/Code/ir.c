@@ -328,11 +328,11 @@ InterCode *ir_stmt(AST_Node *node, int wrapped_layer) {
 
 InterCode *ir_exp(AST_Node *node, Operand *place) {
     assert(node && node->first_child);
+    
     if (strcmp(node->first_child->name, "Exp") == 0 || strcmp(node->first_child->name, "NOT") == 0) {
         if (strcmp(node->first_child->name, "Exp") == 0) {
             if (strcmp(node->first_child->sibling->name, "ASSIGNOP") == 0){
-                Field_List *variable;
-
+                Field_List *variable = NULL;
                 if (strcmp(node->first_child->first_child->name, "ID") == 0 && node->first_child->first_child->sibling == NULL) {
                     // ID
                     variable = ir_query_field_hash_table(hash_pjw(node->first_child->first_child->value), 
@@ -353,19 +353,6 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 }
                 else {
                     // Arrays and Structures
-                    /*
-                    Operand *t1 = make_temp();
-                    InterCode *code1 = ir_exp(node->first_child, t1);
-                    Operand *t2 = make_temp();
-                    InterCode *code2 = ir_exp(node->first_child->sibling->sibling, t2);
-                    InterCode *code3;
-                    if (place == NULL) {
-                        code3 = make_ir(IR_ASSIGN_TO_DEREF, t1, t2, NULL, NULL);
-                    }
-                    else {
-                        code3 = bind(make_ir(IR_ASSIGN_TO_DEREF, t1, t2, NULL, NULL), make_ir(IR_DEREF_ASSIGN, place, t1, NULL, NULL));
-                    }
-                    return bind(bind(code1, code2), code3);*/
                     if (place != NULL) {
                         Operand *t1 = make_temp();
                         InterCode *code1 = ir_exp(node->first_child, t1);
@@ -382,10 +369,6 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 || strcmp(node->first_child->sibling->name, "MINUS") == 0
                 || strcmp(node->first_child->sibling->name, "STAR") == 0
                 || strcmp(node->first_child->sibling->name, "DIV") == 0){
-                Operand *t1 = make_temp();
-                Operand *t2 = make_temp();
-                InterCode *code1 = ir_exp(node->first_child, t1);
-                InterCode *code2 = ir_exp(node->first_child->sibling->sibling, t2);
                 int kind = 0;
                 if (strcmp(node->first_child->sibling->name, "PLUS") == 0) {
                     kind = IR_ADD;
@@ -399,6 +382,22 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 else {
                     kind = IR_DIV;
                 }
+                if ((node->first_child->first_child != NULL && strcmp(node->first_child->first_child->name, "INT") == 0) && 
+                    (node->first_child->sibling->sibling->first_child != NULL && strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0) && place != NULL) {
+                        return make_ir(kind, place, make_constant(atoi(node->first_child->first_child->value)), make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL);
+                }
+                Operand *t1 = make_temp();
+                Operand *t2 = make_temp();
+                InterCode *code1 = NULL;
+                if (node->first_child->first_child != NULL && strcmp(node->first_child->first_child->name, "INT") == 0)
+                    code1 = make_ir(IR_ASSIGN, t1, make_constant(atoi(node->first_child->first_child->value)), NULL, NULL);
+                else
+                    code1 = ir_exp(node->first_child, t1);
+                InterCode *code2 = NULL;
+                if (node->first_child->sibling->sibling->first_child != NULL && strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0)
+                    code2 = make_ir(IR_ASSIGN, t2, make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL, NULL);
+                else
+                    code2 = ir_exp(node->first_child->sibling->sibling, t2);
                 InterCode *code3 = NULL;
                 if (place != NULL)
                     code3 = make_ir(kind, place, t1, t2, NULL);
@@ -1046,22 +1045,6 @@ InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operan
         ir_head = code;
     return code;
 }
-
-// int size_of_structure(Type *structure_type) {
-//     assert(structure_type && structure_type->kind == STRUCTURE);
-//     int size = 0;
-//     Field_List *field = structure_type->u.structure.first_field;
-//     while (field) {
-//         if (field->type->kind == BASIC) {
-//             size += 4;
-//         }
-//         else if (field->type->kind == ARRAY) {
-//             size += 
-//         }
-//     }
-    
-    
-// }
 
 int size_of_array(AST_Node *node) {
     int size = 1;
