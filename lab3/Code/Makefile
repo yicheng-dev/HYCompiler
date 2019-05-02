@@ -22,7 +22,7 @@ parser: syntax $(filter-out $(LFO),$(OBJS))
 	$(CC) -o ../parser $(filter-out $(LFO),$(OBJS)) -ll -ly -ggdb
 
 syntax: lexical syntax-c
-	$(CC) -c $(YFC) -o $(YFO)
+	$(CC) -c $(YFC) -o $(YFO) -ggdb
 
 lexical: $(LFILE)
 	$(FLEX) -o $(LFC) $(LFILE)
