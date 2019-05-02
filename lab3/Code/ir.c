@@ -342,7 +342,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                     assert(variable);
                     Operand *t1 = make_temp();
                     InterCode *code1 = ir_exp(node->first_child->sibling->sibling, t1);
-                    InterCode *code2;
+                    InterCode *code2 = NULL;
                     if (place == NULL) {
                         code2 = make_ir(IR_ASSIGN, variable->op, t1, NULL, NULL);
                     }
@@ -399,7 +399,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 else {
                     kind = IR_DIV;
                 }
-                InterCode *code3;
+                InterCode *code3 = NULL;
                 if (place != NULL)
                     code3 = make_ir(kind, place, t1, t2, NULL);
                 return bind(bind(code1, code2), code3);
@@ -411,7 +411,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 InterCode *code2 = ir_exp(node->first_child->sibling->sibling, t2);
                 Operand *t3 = make_temp();
                 InterCode *code3 = make_ir(IR_MUL, t3, t2, make_constant(size_of_array(node)), NULL);
-                InterCode *code4;
+                InterCode *code4 = NULL;
                 Type *type = ir_exp_type(node);
                 assert(type);
                 if (type->kind != BASIC && place != NULL){
@@ -421,9 +421,24 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                     Operand *t4 = make_temp();
                     Operand *t5 = make_temp();
                     if (place == NULL)
-                        code4 = bind(bind(make_ir(IR_ADD, t4, t1, t3, NULL), ir_exp(node->sibling->sibling, t5)), make_ir(IR_ASSIGN_TO_DEREF, t4, t5, NULL, NULL));
+                        code4 = bind(
+                                    bind(
+                                        make_ir(IR_ADD, t4, t1, t3, NULL), 
+                                        ir_exp(node->sibling->sibling, t5)
+                                    ), 
+                                    make_ir(IR_ASSIGN_TO_DEREF, t4, t5, NULL, NULL)
+                                );
                     else
-                        code4 = bind(bind(bind(make_ir(IR_ADD, t4, t1, t3, NULL), ir_exp(node->sibling->sibling, t5)), make_ir(IR_ASSIGN_TO_DEREF, t4, t5, NULL, NULL)), make_ir(IR_DEREF_ASSIGN, place, t4, NULL, NULL));
+                        code4 = bind(
+                                    bind(
+                                        bind(
+                                            make_ir(IR_ADD, t4, t1, t3, NULL), 
+                                            ir_exp(node->sibling->sibling, t5)
+                                        ), 
+                                        make_ir(IR_ASSIGN_TO_DEREF, t4, t5, NULL, NULL)
+                                    ), 
+                                    make_ir(IR_DEREF_ASSIGN, place, t4, NULL, NULL)
+                                );
                 }
                 else if (place != NULL){
                     Operand *t4 = make_temp();
@@ -457,7 +472,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 }
                 assert(cur_field);
                 Operand *offset = make_constant(cur_field->offset);
-                InterCode *code2;
+                InterCode *code2 = NULL;
                 if (type->kind != BASIC && place != NULL) {
                     code2 = make_ir(IR_ADD, place, t1, offset, NULL);
                 }
@@ -510,7 +525,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
     else if (strcmp(node->first_child->name, "MINUS") == 0){
         Operand *t1 = make_temp();
         InterCode *code1 = ir_exp(node->first_child->sibling, t1);
-        InterCode *code2;
+        InterCode *code2 = NULL;
         if (place != NULL)
             code2 = make_ir(IR_SUB, place, make_constant(0), t1, NULL);
         return bind(code1, code2);
@@ -537,7 +552,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 code2 = bind(code2, make_ir(IR_ARG, cur, NULL, NULL, NULL));
                 cur = cur->next;
             }
-            InterCode *code3;
+            InterCode *code3 = NULL;
             if (place != NULL) {
                 code3 = make_ir(IR_CALL, place, function->op, NULL, NULL);
             }
