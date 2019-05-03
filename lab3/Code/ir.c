@@ -189,6 +189,9 @@ InterCode *ir_dec(AST_Node *node, Type *type, int wrapped_layer) {
     assert(type);
     if (node->first_child->sibling){
         Field_List *variable = ir_var_dec(node->first_child, type, 0, wrapped_layer);
+        if (strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0) {
+            return make_ir(IR_ASSIGN, variable->op, make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL, NULL);
+        }
         Operand *t1 = make_temp();
         InterCode *code1 = ir_exp(node->first_child->sibling->sibling, t1);
         InterCode *code2 = make_ir(IR_ASSIGN, variable->op, t1, NULL, NULL);
@@ -345,6 +348,14 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                         node->first_child->first_child,
                         0);
                     assert(variable);
+                    if (strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0) {
+                        if (place == NULL) {
+                            return make_ir(IR_ASSIGN, variable->op, make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL, NULL);
+                        }
+                        else {
+                            return bind(make_ir(IR_ASSIGN, variable->op, make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL, NULL), make_ir(IR_ASSIGN, place, variable->op, NULL, NULL));
+                        }
+                    }
                     Operand *t1 = make_temp();
                     InterCode *code1 = ir_exp(node->first_child->sibling->sibling, t1);
                     InterCode *code2 = NULL;
@@ -542,6 +553,12 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
         return ir_exp(node->first_child->sibling, place);
     }
     else if (strcmp(node->first_child->name, "MINUS") == 0){
+        if (strcmp(node->first_child->sibling->first_child->name, "INT") == 0) {
+            if (place != NULL) {
+                return make_ir(IR_ASSIGN, place, make_constant(-atoi(node->first_child->sibling->first_child->value)), NULL, NULL);
+            }
+            return NULL;
+        }
         Operand *t1 = make_temp();
         InterCode *code1 = ir_exp(node->first_child->sibling, t1);
         InterCode *code2 = NULL;

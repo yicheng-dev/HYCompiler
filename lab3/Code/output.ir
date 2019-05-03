@@ -52,55 +52,52 @@ t40 := t36 + t39
 t35 := *t40
 RETURN t35
 FUNCTION main :
-t41 := #2
-v6 := t41
+v6 := #2
 DEC v7 20
-t42 := v6
+t41 := v6
+t43 := v6
+t42 := t43 / #5
 t44 := v6
-t43 := t44 / #5
-t45 := v6
-ARG t45
-t46 := CALL func2
-t47 := #4
-v8 := t47
+ARG t44
+t45 := CALL func2
+v8 := #4
 LABEL label1 :
-t48 := v8
-t49 := #0
-IF t48 >= t49 GOTO label2
+t46 := v8
+t47 := #0
+IF t46 >= t47 GOTO label2
 GOTO label3
 LABEL label2 :
-t50 := &v7
-t51 := v8
-t52 := t51 * #4
-t53 := t50 + t52
+t48 := &v7
+t49 := v8
+t50 := t49 * #4
+t51 := t48 + t50
+t52 := v8
+*t51 := t52
 t54 := v8
-*t53 := t54
-t56 := v8
-t55 := t56 - #1
-v8 := t55
+t53 := t54 - #1
+v8 := t53
 GOTO label1
 LABEL label3 :
-t57 := &v7
-ARG t57
-t58 := CALL func1
-t59 := #0
-v8 := t59
+t55 := &v7
+ARG t55
+t56 := CALL func1
+v8 := #0
 LABEL label4 :
-t60 := v8
-t61 := #5
-IF t60 < t61 GOTO label5
+t57 := v8
+t58 := #5
+IF t57 < t58 GOTO label5
 GOTO label6
 LABEL label5 :
-t63 := &v7
-t64 := v8
-t65 := t64 * #4
-t66 := t63 + t65
-t62 := *t66
-WRITE t62
-t68 := v8
-t67 := t68 + #1
-v8 := t67
+t60 := &v7
+t61 := v8
+t62 := t61 * #4
+t63 := t60 + t62
+t59 := *t63
+WRITE t59
+t65 := v8
+t64 := t65 + #1
+v8 := t64
 GOTO label4
 LABEL label6 :
-t69 := #0
-RETURN t69
+t66 := #0
+RETURN t66
