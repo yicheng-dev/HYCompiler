@@ -328,7 +328,12 @@ InterCode *ir_stmt(AST_Node *node, int wrapped_layer) {
 
 InterCode *ir_exp(AST_Node *node, Operand *place) {
     assert(node && node->first_child);
-    
+    if (all_constant(node)) {
+        if (place == NULL)
+            return NULL;
+        Operand *constant = make_constant(get_constant(node));
+        return make_ir(IR_ASSIGN, place, constant, NULL, NULL);
+    }
     if (strcmp(node->first_child->name, "Exp") == 0 || strcmp(node->first_child->name, "NOT") == 0) {
         if (strcmp(node->first_child->name, "Exp") == 0) {
             if (strcmp(node->first_child->sibling->name, "ASSIGNOP") == 0){
@@ -384,20 +389,35 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 }
                 if ((node->first_child->first_child != NULL && strcmp(node->first_child->first_child->name, "INT") == 0) && 
                     (node->first_child->sibling->sibling->first_child != NULL && strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0) && place != NULL) {
-                        return make_ir(kind, place, make_constant(atoi(node->first_child->first_child->value)), make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL);
+                        int result = atoi(node->first_child->first_child->value);
+                        switch (kind) {
+                            case IR_ADD: result += atoi(node->first_child->sibling->sibling->first_child->value); break;
+                            case IR_SUB: result -= atoi(node->first_child->sibling->sibling->first_child->value); break;
+                            case IR_MUL: result *= atoi(node->first_child->sibling->sibling->first_child->value); break;
+                            case IR_DIV: result /= atoi(node->first_child->sibling->sibling->first_child->value); break;
+                            default: assert(0);
+                        }
+                        // place = make_constant(result);
+                        return make_ir(IR_ASSIGN, place, make_constant(result), NULL, NULL);
                 }
                 Operand *t1 = make_temp();
-                Operand *t2 = make_temp();
                 InterCode *code1 = NULL;
-                if (node->first_child->first_child != NULL && strcmp(node->first_child->first_child->name, "INT") == 0)
-                    code1 = make_ir(IR_ASSIGN, t1, make_constant(atoi(node->first_child->first_child->value)), NULL, NULL);
-                else
-                    code1 = ir_exp(node->first_child, t1);
                 InterCode *code2 = NULL;
-                if (node->first_child->sibling->sibling->first_child != NULL && strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0)
-                    code2 = make_ir(IR_ASSIGN, t2, make_constant(atoi(node->first_child->sibling->sibling->first_child->value)), NULL, NULL);
-                else
-                    code2 = ir_exp(node->first_child->sibling->sibling, t2);
+                if (node->first_child->first_child != NULL && strcmp(node->first_child->first_child->name, "INT") == 0) {
+                    Operand *constant = make_constant(atoi(node->first_child->first_child->value));
+                    code1 = ir_exp(node->first_child->sibling->sibling, t1);
+                    code2 = make_ir(kind, place, constant, t1, NULL);
+                    return bind(code1, code2);
+                }
+                else if (node->first_child->sibling->sibling->first_child != NULL && strcmp(node->first_child->sibling->sibling->first_child->name, "INT") == 0){
+                    code1 = ir_exp(node->first_child, t1);
+                    Operand *constant = make_constant(atoi(node->first_child->sibling->sibling->first_child->value));
+                    code2 = make_ir(kind, place, t1, constant, NULL);
+                    return bind(code1, code2);
+                }
+                Operand *t2 = make_temp();
+                code1 = ir_exp(node->first_child, t1);
+                code2 = ir_exp(node->first_child->sibling->sibling, t2);
                 InterCode *code3 = NULL;
                 if (place != NULL)
                     code3 = make_ir(kind, place, t1, t2, NULL);
@@ -1063,6 +1083,57 @@ int size_of_array(AST_Node *node) {
         size *= cur_type->u.structure.size;
     }
     return size;
+}
+
+int get_constant(AST_Node *node) {
+    if (strcmp(node->first_child->name, "Exp") == 0 && node->first_child->sibling) {
+        if (strcmp(node->first_child->sibling->name, "PLUS") == 0) {
+            return get_constant(node->first_child) + get_constant(node->first_child->sibling->sibling);
+        }
+        if (strcmp(node->first_child->sibling->name, "MINUS") == 0) {
+            return get_constant(node->first_child) - get_constant(node->first_child->sibling->sibling);
+        }
+        if (strcmp(node->first_child->sibling->name, "STAR") == 0) {
+            return get_constant(node->first_child) * get_constant(node->first_child->sibling->sibling);
+        }
+        if (strcmp(node->first_child->sibling->name, "DIV") == 0) {
+            return get_constant(node->first_child) / get_constant(node->first_child->sibling->sibling);
+        }
+        assert(0);
+        return 0;
+    }
+    if (strcmp(node->first_child->name, "MINUS") == 0) {
+        return -get_constant(node->first_child->sibling);
+    }
+    if (strcmp(node->first_child->name, "LP") == 0) {
+        return get_constant(node->first_child->sibling);
+    }
+    if (strcmp(node->first_child->name, "INT") == 0) {
+        return atoi(node->first_child->value);
+    }
+    assert(0);
+    return 0;
+}
+
+int all_constant(AST_Node *node) {
+    if (strcmp(node->first_child->name, "Exp") == 0 && node->first_child->sibling && 
+        (strcmp(node->first_child->sibling->name, "PLUS") == 0 || strcmp(node->first_child->sibling->name, "MINUS") == 0
+        || strcmp(node->first_child->sibling->name, "STAR") == 0 || strcmp(node->first_child->sibling->name, "DIV") == 0)) {
+        if (!all_constant(node->first_child) || !all_constant(node->first_child->sibling->sibling)) {
+            return 0;
+        }
+        return 1;
+    }
+    if (strcmp(node->first_child->name, "MINUS") == 0 || strcmp(node->first_child->name, "LP") == 0) {
+        if (!all_constant(node->first_child->sibling)) {
+            return 0;
+        }
+        return 1;
+    }
+    if (strcmp(node->first_child->name, "INT") == 0) {
+        return 1;
+    }
+    return 0;
 }
 
 void to_file(FILE *fp) {

@@ -137,6 +137,8 @@ Operand *make_relop(char *content);
 InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operand *relop);
 int size_of_array(AST_Node *node);
 int size_of_array_type(struct Type *type);
+int get_constant(AST_Node *node);
+int all_constant(AST_Node *node);
 void to_file(FILE *fp);
 char *show_ir(InterCode *code);
 char *show_op(Operand *op);
