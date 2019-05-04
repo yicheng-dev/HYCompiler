@@ -1,0 +1,5 @@
+int main() {
+    int a = (-1 * 2) * -(100 -96);
+    write(a);
+    return 0;
+}

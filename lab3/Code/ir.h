@@ -139,7 +139,11 @@ int size_of_array(AST_Node *node);
 int size_of_array_type(struct Type *type);
 int get_constant(AST_Node *node);
 int all_constant(AST_Node *node);
+Operand *get_id(AST_Node *node);
+int is_id(AST_Node *node);
 void to_file(FILE *fp);
 char *show_ir(InterCode *code);
 char *show_op(Operand *op);
+void replace_label(int new_label_no, int old_label_no);
+void post_optimize();
 #endif
