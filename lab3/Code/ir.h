@@ -42,6 +42,7 @@ struct Operand {
         } address;
     } u;
     struct Operand *next;
+    struct Operand *next_list_op;
 };
 
 struct InterCode {
@@ -145,5 +146,6 @@ void to_file(FILE *fp);
 char *show_ir(InterCode *code);
 char *show_op(Operand *op);
 void replace_label(int new_label_no, int old_label_no);
+void replace_temp(int new_temp_no, int old_temp_no);
 void post_optimize();
 #endif

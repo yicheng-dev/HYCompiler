@@ -6,6 +6,7 @@
 #include "math.h"
 
 static InterCode *ir_head = NULL;
+static Operand *op_head = NULL;
 static Operand *arg_list_head = NULL;
 static Field_List *var_hash[MAX_HASH_TABLE_LEN];
 static Func *func_hash[MAX_HASH_TABLE_LEN];
@@ -518,8 +519,15 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                     }
                     return bind(code1, code2);
                 }
-                Operand *t2 = make_temp();
-                InterCode *code2 = ir_exp(node->first_child->sibling->sibling, t2);
+                Operand *t2 = NULL;
+                InterCode *code2 = NULL;
+                if (is_id(node->first_child->sibling->sibling)) {
+                    t2 = get_id(node->first_child->sibling->sibling);
+                }
+                else {
+                    t2 = make_temp();
+                    code2 = ir_exp(node->first_child->sibling->sibling, t2);
+                }
                 Operand *t3 = make_temp();
                 InterCode *code3 = make_ir(IR_MUL, t3, t2, make_constant(size_of_array(node)), NULL);
                 InterCode *code4 = NULL;
@@ -1091,10 +1099,16 @@ Field_List *ir_query_field_hash_table(unsigned hash_index, char *str, AST_Node *
     return NULL;
 }
 
+void insert_operand(Operand *op) {
+    op->next_list_op = op_head;
+    op_head = op;
+}
+
 Operand *make_temp() {
     Operand *new_temp = malloc(sizeof(Operand));
     new_temp->kind = OP_TEMP;
     new_temp->u.temp.no = temp_no ++;
+    insert_operand(new_temp);
     return new_temp;
 }
 
@@ -1103,6 +1117,7 @@ Operand *make_var(Field_List *field) {
     new_var->kind = OP_VARIABLE;
     new_var->u.var.no = var_no ++;
     new_var->u.var.field = field;
+    insert_operand(new_var);
     return new_var;
 }
 
@@ -1113,6 +1128,7 @@ Operand *make_addr(Operand *var, int ref_hidden) {
     new_addr->u.address.field = var->u.var.field;
     new_addr->u.address.val_kind = var->kind;
     new_addr->u.address.ref_hidden = ref_hidden;
+    insert_operand(new_addr);
     return new_addr;
 }
 
@@ -1120,6 +1136,7 @@ Operand *make_func(Func *func) {
     Operand *new_func = malloc(sizeof(Operand));
     new_func->kind = OP_FUNC;
     new_func->u.func.func = func;
+    insert_operand(new_func);
     return new_func;
 }
 
@@ -1127,6 +1144,7 @@ Operand *make_label() {
     Operand *new_label = malloc(sizeof(Operand));
     new_label->kind = OP_LABEL;
     new_label->u.label.no = label_no ++;
+    insert_operand(new_label);
     return new_label;
 }
 
@@ -1134,6 +1152,7 @@ Operand *make_constant(int val) {
     Operand *new_constant = malloc(sizeof(Operand));
     new_constant->kind = OP_CONSTANT;
     new_constant->u.constant.val = val;
+    insert_operand(new_constant);
     return new_constant;
 }
 
@@ -1141,6 +1160,7 @@ Operand *make_relop(char *content) {
     Operand *new_relop = malloc(sizeof(Operand));
     strcpy(new_relop->u.relop.content, content);
     new_relop->kind = OP_RELOP;
+    insert_operand(new_relop);
     return new_relop;
 }
 
@@ -1334,12 +1354,22 @@ char *show_op(Operand *op) {
 }
 
 void replace_label(int new_label_no, int old_label_no) {
-    InterCode *ir = ir_head;
-    while (ir != NULL) {
-        if (ir->kind == IR_LABEL && ir->u.nonop.result->u.label.no == old_label_no) {
-            ir->u.nonop.result->u.label.no = new_label_no;
+    Operand *op = op_head;
+    while (op != NULL) {
+        if (op->kind == OP_LABEL && op->u.label.no == old_label_no) {
+            op->u.label.no = new_label_no;
         }
-        ir = ir->next;
+        op = op->next_list_op;
+    }
+}
+
+void replace_temp(int new_temp_no, int old_temp_no) {
+    Operand *op = op_head;
+    while (op != NULL) {
+        if (op->kind == OP_TEMP && op->u.temp.no == old_temp_no) {
+            op->u.temp.no = new_temp_no;
+        }
+        op = op->next_list_op;
     }
 }
 
@@ -1353,6 +1383,16 @@ void post_optimize() {
             ir->next = ir->next->next;
             ir->next->prev = ir;
         } /* LABEL label1 | LABEL label2 ---> LABEL label1 */
+        if (ir->kind == IR_ADD && ir->u.binop.result->kind == OP_TEMP && ir->u.binop.op1->kind == OP_TEMP && ir->u.binop.op2->kind == OP_CONSTANT && ir->u.binop.op2->u.constant.val == 0) {
+            replace_temp(ir->u.binop.op1->u.temp.no, ir->u.binop.result->u.temp.no);
+            if (ir->prev != NULL) {
+                ir->prev->next = ir->next;
+            }
+            if (ir->next != NULL) {
+                ir->next->prev = ir->prev;
+            }
+            ir = ir->prev;
+        } /* t1 = t2 + #0 ---> replace t1 by t2 */
         if ((ir->kind == IR_ASSIGN || ir->kind == IR_ADD || ir->kind == IR_SUB || ir->kind == IR_MUL || ir->kind == IR_DIV || ir->kind == IR_CALL)) {
             if ((ir->kind == IR_ASSIGN || ir->kind == IR_CALL) && ir->u.sinop.result->kind == OP_TEMP && ir->next != NULL
                 && ir->next->kind == IR_ASSIGN && ir->next->u.sinop.result->kind == OP_VARIABLE
