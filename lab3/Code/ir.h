@@ -32,7 +32,14 @@ struct Operand {
             struct Func *func;
         } func;
         struct {
-            char content[5];
+            enum {
+                RELOP_G,
+                RELOP_L,
+                RELOP_GE,
+                RELOP_LE,
+                RELOP_E,
+                RELOP_NE
+            } kind;
         } relop;
         struct {
             int no;
@@ -132,10 +139,12 @@ Operand *make_temp();
 Operand *make_var(struct Field_List *field);
 Operand *make_addr(struct Operand *var, int ref_hidden);
 Operand *make_func(struct Func *func);
+Operand *make_fall_label();
 Operand *make_label();
 Operand *make_constant(int val);
-Operand *make_relop(char *content);
+Operand *make_relop(int kind);
 InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operand *relop);
+Operand *relop_reverse(Operand *relop);
 int size_of_array(AST_Node *node);
 int size_of_array_type(struct Type *type);
 int get_constant(AST_Node *node);

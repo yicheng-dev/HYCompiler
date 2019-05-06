@@ -1,8 +1,9 @@
 FUNCTION main :
-t1 := v1 + #1
-IF t1 != #0 GOTO label1
-GOTO label2
+v1 := #0
+v2 := v1
+v3 := v2
+t1 := v1
+IF t1 == #0 GOTO label1
+WRITE v3
 LABEL label1 :
-RETURN #1
-LABEL label2 :
 RETURN #0

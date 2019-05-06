@@ -8,6 +8,7 @@
 static InterCode *ir_head = NULL;
 static Operand *op_head = NULL;
 static Operand *arg_list_head = NULL;
+static Operand *fall_label = NULL;
 static Field_List *var_hash[MAX_HASH_TABLE_LEN];
 static Func *func_hash[MAX_HASH_TABLE_LEN];
 
@@ -26,6 +27,7 @@ void ir_init_hash_table() {
     }
     ir_insert_read_write_func("read");
     ir_insert_read_write_func("write");
+    fall_label = make_fall_label();
 }
 
 void ir_insert_read_write_func(char *name) {
@@ -269,8 +271,7 @@ InterCode *ir_stmt(AST_Node *node, int wrapped_layer) {
         if (node->first_child->sibling->sibling->sibling->sibling->sibling) {
             Operand *label1 = make_label();
             Operand *label2 = make_label();
-            Operand *label3 = make_label();
-            InterCode *code1 = ir_cond(node->first_child->sibling->sibling, label1, label2);
+            InterCode *code1 = ir_cond(node->first_child->sibling->sibling, fall_label, label1);
             InterCode *code2 = ir_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer);
             InterCode *code3 = ir_stmt(node->first_child->sibling->sibling->sibling->sibling->sibling->sibling, wrapped_layer);
             return
@@ -279,55 +280,44 @@ InterCode *ir_stmt(AST_Node *node, int wrapped_layer) {
                         bind(
                             bind(
                                 bind(
-                                    bind(
-                                        code1,
-                                        make_ir(IR_LABEL, label1, NULL, NULL, NULL)
-                                    ),
+                                    code1,
                                     code2
                                 ),
-                                make_ir(IR_GOTO, label3, NULL, NULL, NULL)
+                                make_ir(IR_GOTO, label2, NULL, NULL, NULL)
                             ),
-                            make_ir(IR_LABEL, label2, NULL, NULL, NULL)
+                            make_ir(IR_LABEL, label1, NULL, NULL, NULL)
                         ),
                         code3
                     ),
-                    make_ir(IR_LABEL, label3, NULL, NULL, NULL)
+                    make_ir(IR_LABEL, label2, NULL, NULL, NULL)
                 );
         }
         else {
             Operand *label1 = make_label();
-            Operand *label2 = make_label();
-            InterCode *code1 = ir_cond(node->first_child->sibling->sibling, label1, label2);
+            InterCode *code1 = ir_cond(node->first_child->sibling->sibling, fall_label, label1);
             InterCode *code2 = ir_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer);
             return 
                 bind(
                     bind(
-                        bind(
-                            code1, 
-                            make_ir(IR_LABEL, label1, NULL, NULL, NULL)
-                        ), 
+                        code1,
                         code2
                     ), 
-                    make_ir(IR_LABEL, label2, NULL, NULL, NULL)
+                    make_ir(IR_LABEL, label1, NULL, NULL, NULL)
                 );
         }
     }
     if (strcmp(node->first_child->name, "WHILE") == 0) {
         Operand *label1 = make_label();
-        Operand *label2 = make_label();
         Operand *label3 = make_label();
-        InterCode *code1 = ir_cond(node->first_child->sibling->sibling, label2, label3);
+        InterCode *code1 = ir_cond(node->first_child->sibling->sibling, fall_label, label3);
         InterCode *code2 = ir_stmt(node->first_child->sibling->sibling->sibling->sibling, wrapped_layer);
         return
             bind(
                 bind(
                     bind(
                         bind(
-                            bind(
-                                make_ir(IR_LABEL, label1, NULL, NULL, NULL),
-                                code1
-                            ),
-                            make_ir(IR_LABEL, label2, NULL, NULL, NULL)
+                            make_ir(IR_LABEL, label1, NULL, NULL, NULL),
+                            code1
                         ),
                         code2
                     ),
@@ -826,21 +816,62 @@ InterCode *ir_cond(AST_Node *node, Operand *label_true, Operand *label_false) {
                 t2 = make_temp();
                 code2 = ir_exp(node->first_child->sibling->sibling, t2);
             }
-            Operand *op = make_relop(node->first_child->sibling->value);
-            InterCode *code3 = make_ir(IR_IF, label_true, t1, t2, op);
-            return bind(bind(bind(code1, code2), code3), make_ir(IR_GOTO, label_false, NULL, NULL, NULL));
+            /* fall optimization */
+            InterCode *code3 = NULL;
+            int relop_kind = -1;
+            if (strcmp(node->first_child->sibling->value, ">") == 0) relop_kind = RELOP_G;
+            else if (strcmp(node->first_child->sibling->value, "<") == 0) relop_kind = RELOP_L;
+            else if (strcmp(node->first_child->sibling->value, ">=") == 0) relop_kind = RELOP_GE;
+            else if (strcmp(node->first_child->sibling->value, "<=") == 0) relop_kind = RELOP_LE;
+            else if (strcmp(node->first_child->sibling->value, "==") == 0) relop_kind = RELOP_E;
+            else if (strcmp(node->first_child->sibling->value, "!=") == 0) relop_kind = RELOP_NE;
+            Operand *relop = make_relop(relop_kind);
+            if (label_true->u.label.no != -1 && label_false->u.label.no != -1) {
+                code3 = bind(make_ir(IR_IF, label_true, t1, t2, relop), make_ir(IR_GOTO, label_false, NULL, NULL, NULL));
+            }
+            else if (label_true->u.label.no != -1) {
+                code3 = make_ir(IR_IF, label_true, t1, t2, relop);
+            }
+            else if (label_false->u.label.no != -1) {
+                code3 = make_ir(IR_IF, label_false, t1, t2, relop_reverse(relop));
+            }
+            return bind(bind(code1, code2), code3);
         }
         else if (strcmp(node->first_child->sibling->name, "AND") == 0) {
-            Operand *label1 = make_label();
-            InterCode *code1 = ir_cond(node->first_child, label1, label_false);
+            InterCode *code1 = NULL;
+            Operand *label1 = NULL;
+            if (label_false->u.label.no != -1) {
+                code1 = ir_cond(node->first_child, fall_label, label_false);
+            }
+            else {
+                label1 = make_label();
+                code1 = ir_cond(node->first_child, fall_label, label1);
+            }
             InterCode *code2 = ir_cond(node->first_child->sibling->sibling, label_true, label_false);
-            return bind(bind(code1, make_ir(IR_LABEL, label1, NULL, NULL, NULL)), code2);
+            if (label_false->u.label.no != -1) {
+                return bind(code1, code2);
+            }
+            else {
+                return bind(bind(code1, code2), make_ir(IR_LABEL, label1, NULL, NULL, NULL));
+            }
         }
         else if (strcmp(node->first_child->sibling->name, "OR") == 0) {
-            Operand *label1 = make_label();
-            InterCode *code1 = ir_cond(node->first_child, label_true, label1);
+            InterCode *code1 = NULL;
+            Operand *label1 = NULL;
+            if (label_true->u.label.no != -1) {
+                code1 = ir_cond(node->first_child, label_true, fall_label);
+            }
+            else {
+                label1 = make_label();
+                code1 = ir_cond(node->first_child, label1, fall_label);
+            }
             InterCode *code2 = ir_cond(node->first_child->sibling->sibling, label_true, label_false);
-            return bind(bind(code1, make_ir(IR_LABEL, label1, NULL, NULL, NULL)), code2);
+            if (label_true->u.label.no != -1) {
+                return bind(code1, code2);
+            }
+            else {
+                return bind(bind(code1, code2), make_ir(IR_LABEL, label1, NULL, NULL, NULL));
+            }
         }
     }
     if (strcmp(node->first_child->name, "NOT") == 0) {
@@ -849,8 +880,18 @@ InterCode *ir_cond(AST_Node *node, Operand *label_true, Operand *label_false) {
     else {
         Operand *t1 = make_temp();
         InterCode *code1 = ir_exp(node, t1);
-        InterCode *code2 = make_ir(IR_IF, label_true, t1, make_constant(0), make_relop("!="));
-        return bind(bind(code1, code2), make_ir(IR_GOTO, label_false, NULL, NULL, NULL));
+        InterCode *code3 = NULL;
+            if (label_true->u.label.no != -1 && label_false->u.label.no != -1) {
+                code3 = bind(make_ir(IR_IF, label_true, t1, make_constant(0), 
+                    make_relop(RELOP_NE)), make_ir(IR_GOTO, label_false, NULL, NULL, NULL));
+            }
+            else if (label_true->u.label.no != -1) {
+                code3 = make_ir(IR_IF, label_true, t1, make_constant(0), make_relop(RELOP_NE));
+            }
+            else if (label_false->u.label.no != -1) {
+                code3 = make_ir(IR_IF, label_false, t1, make_constant(0), make_relop(RELOP_E));
+            }
+            return bind(code1, code3);
     }
 }
 
@@ -1140,6 +1181,13 @@ Operand *make_func(Func *func) {
     return new_func;
 }
 
+Operand *make_fall_label() {
+    Operand *new_label = malloc(sizeof(Operand));
+    new_label->kind = OP_LABEL;
+    new_label->u.label.no = -1;
+    return new_label;
+}
+
 Operand *make_label() {
     Operand *new_label = malloc(sizeof(Operand));
     new_label->kind = OP_LABEL;
@@ -1156,9 +1204,9 @@ Operand *make_constant(int val) {
     return new_constant;
 }
 
-Operand *make_relop(char *content) {
+Operand *make_relop(int kind) {
     Operand *new_relop = malloc(sizeof(Operand));
-    strcpy(new_relop->u.relop.content, content);
+    new_relop->u.relop.kind = kind;
     new_relop->kind = OP_RELOP;
     insert_operand(new_relop);
     return new_relop;
@@ -1209,6 +1257,24 @@ InterCode *make_ir(int kind, Operand *result, Operand *op1, Operand *op2, Operan
     return code;
 }
 
+Operand *relop_reverse(Operand *relop) {
+    Operand *new_relop = malloc(sizeof(Operand));
+    new_relop->kind = OP_RELOP;
+    new_relop->next_list_op = relop->next_list_op;
+    new_relop->next = relop->next;
+    switch (relop->u.relop.kind)
+    {
+    case RELOP_G: new_relop->u.relop.kind = RELOP_LE; break;
+    case RELOP_L: new_relop->u.relop.kind = RELOP_GE; break;
+    case RELOP_GE: new_relop->u.relop.kind = RELOP_L; break;
+    case RELOP_LE: new_relop->u.relop.kind = RELOP_G; break;
+    case RELOP_E: new_relop->u.relop.kind = RELOP_NE; break;
+    case RELOP_NE: new_relop->u.relop.kind = RELOP_E; break;
+    default: assert(0); break;
+    }
+    return new_relop;
+}
+
 int size_of_array(AST_Node *node) {
     int size = 1;
     Type *type = ir_exp_type(node);
@@ -1240,6 +1306,11 @@ int get_constant(AST_Node *node) {
             return get_constant(node->first_child) * get_constant(node->first_child->sibling->sibling);
         }
         if (strcmp(node->first_child->sibling->name, "DIV") == 0) {
+            int divider = get_constant(node->first_child->sibling->sibling);
+            if (divider == 0) {
+                printf("Error: divide-by-zero\n");
+                assert(0);
+            }
             return get_constant(node->first_child) / get_constant(node->first_child->sibling->sibling);
         }
         assert(0);
@@ -1337,7 +1408,17 @@ char *show_op(Operand *op) {
     case OP_TEMP: sprintf(buffer, "t%d", op->u.temp.no); break;
     case OP_LABEL: sprintf(buffer, "label%d", op->u.label.no); break;
     case OP_FUNC: sprintf(buffer, "%s", op->u.func.func->name); break;
-    case OP_RELOP: sprintf(buffer, "%s", op->u.relop.content); break;
+    case OP_RELOP: 
+        switch (op->u.relop.kind) {
+        case RELOP_G: sprintf(buffer, ">"); break;
+        case RELOP_L: sprintf(buffer, "<"); break;
+        case RELOP_GE: sprintf(buffer, ">="); break;
+        case RELOP_LE: sprintf(buffer, "<="); break;
+        case RELOP_E: sprintf(buffer, "=="); break;
+        case RELOP_NE: sprintf(buffer, "!="); break;
+        default: assert(0); break;
+        }
+        break;
     case OP_ADDRESS: 
         if (op->u.address.ref_hidden == 0) {
             if (op->u.address.val_kind == OP_TEMP) sprintf(buffer, "&t%d", op->u.address.no);

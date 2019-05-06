@@ -3,13 +3,8 @@ int func1(int arr[5]) {
     return 0;
 }
 
-int func2(int a1) {
-    int arr1[10000];
-    struct s {
-        int arr2[10000];
-    } s1;
-    s1.arr2[0] = 100;
-    return s1.arr2[0];
+int func2(struct a c) {
+    return 0;
 }
 
 int main(){
