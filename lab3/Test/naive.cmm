@@ -1,7 +1,4 @@
 int main() {
-    int x;
-    if (x = 0) {
-        write(x);
-    }
+    int x = 1 / 0;
     return 0;
 }

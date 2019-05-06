@@ -1309,7 +1309,7 @@ int get_constant(AST_Node *node) {
             int divider = get_constant(node->first_child->sibling->sibling);
             if (divider == 0) {
                 printf("Error: divide-by-zero\n");
-                assert(0);
+                exit(1);
             }
             return get_constant(node->first_child) / get_constant(node->first_child->sibling->sibling);
         }
