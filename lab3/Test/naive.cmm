@@ -1,5 +1,5 @@
 int main() {
-    int a = (-1 * 2) * -(100 -96);
-    write(a);
+    int x;
+    if (x + 1) {return 1; }
     return 0;
 }
