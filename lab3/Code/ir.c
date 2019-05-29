@@ -5,9 +5,13 @@
 #include "ir.h"
 #include "math.h"
 
+#define MAX_ARG_LIST_HEAD_NUM 10000000
+
 static InterCode *ir_head = NULL;
 static Operand *op_head = NULL;
-static Operand *arg_list_head = NULL;
+static Operand *arg_list_head[MAX_ARG_LIST_HEAD_NUM];
+static int arg_list_index;
+
 static Operand *fall_label = NULL;
 static Field_List *var_hash[MAX_HASH_TABLE_LEN];
 static Func *func_hash[MAX_HASH_TABLE_LEN];
@@ -21,6 +25,10 @@ void ir_init_hash_table() {
     label_no = 1;
     temp_no = 1;
     var_no = 1;
+    for (i = 0; i < MAX_ARG_LIST_HEAD_NUM; i ++) {
+        arg_list_head[i] = NULL;
+    }
+    arg_list_index = 0;
     for (i = 0; i < MAX_HASH_TABLE_LEN; i ++){
         var_hash[i] = NULL;
         func_hash[i] = NULL;
@@ -470,8 +478,18 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                 return bind(bind(code1, code2), code3);
             }
             else if (strcmp(node->first_child->sibling->name, "LB") == 0 && strcmp(node->first_child->sibling->sibling->name, "Exp") == 0){
-                Operand *t1 = make_temp();
-                InterCode *code1 = ir_exp(node->first_child, t1);
+                Operand *t1 = NULL;
+                InterCode *code1 = NULL;
+                if (strcmp(node->first_child->first_child->name, "ID") == 0 && node->first_child->first_child->sibling == NULL) {
+                    Field_List *variable = ir_query_field_hash_table(hash_pjw(node->first_child->first_child->value), 
+                        node->first_child->first_child->value, node->first_child->first_child, 0);
+                    assert(variable);
+                    t1 = variable->op;
+                }
+                else {
+                    t1 = make_temp();
+                    code1 = ir_exp(node->first_child, t1);
+                }
                 if (all_constant(node->first_child->sibling->sibling)) {
                     Operand *array_offset = make_constant(get_constant(node->first_child->sibling->sibling) * size_of_array(node));
                     Type *type = ir_exp_type(node);
@@ -655,13 +673,14 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
         }
         if (strcmp(node->first_child->sibling->sibling->name, "Args") == 0){
             Func *function = ir_query_func_hash_table(hash_pjw(node->first_child->value), node->first_child->value);
-            arg_list_head = NULL;
+            arg_list_head[++ arg_list_index] = NULL;
             InterCode *code1 = ir_args(node->first_child->sibling->sibling);
             if (strcmp(function->name, "write") == 0) {
-                assert(arg_list_head);
-                return bind(code1, make_ir(IR_WRITE, arg_list_head, NULL, NULL, NULL));
+                assert(arg_list_head[arg_list_index]);
+                return bind(code1, make_ir(IR_WRITE, arg_list_head[arg_list_index], NULL, NULL, NULL));
             }
-            Operand *cur = arg_list_head;
+            Operand *cur = arg_list_head[arg_list_index];
+            arg_list_index --;
             InterCode *code2 = NULL;
             while (cur != NULL) {
                 code2 = bind(code2, make_ir(IR_ARG, cur, NULL, NULL, NULL));
@@ -878,8 +897,18 @@ InterCode *ir_cond(AST_Node *node, Operand *label_true, Operand *label_false) {
         return ir_cond(node->first_child->sibling, label_false, label_true);
     }
     else {
-        Operand *t1 = make_temp();
-        InterCode *code1 = ir_exp(node, t1);
+        Operand *t1 = NULL;
+        InterCode *code1 = NULL;
+        if (all_constant(node)) {
+            t1 = make_constant(get_constant(node));
+        }
+        else if (is_id(node)) {
+            t1 = get_id(node);
+        }
+        else {
+            t1 = make_temp();
+            code1 = ir_exp(node, t1);
+        }
         InterCode *code3 = NULL;
             if (label_true->u.label.no != -1 && label_false->u.label.no != -1) {
                 code3 = bind(make_ir(IR_IF, label_true, t1, make_constant(0), 
@@ -909,9 +938,9 @@ InterCode *ir_args(AST_Node *node) {
         t1 = make_temp();
         code1 = ir_exp(node->first_child, t1);
     }
-    t1->next = arg_list_head;
-    arg_list_head = t1;
-    assert(arg_list_head);    
+    t1->next = arg_list_head[arg_list_index];
+    arg_list_head[arg_list_index] = t1;
+    assert(arg_list_head[arg_list_index]);    
     if (node->first_child->sibling == NULL) {
         return code1;
     }

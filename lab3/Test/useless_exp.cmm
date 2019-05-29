@@ -3,7 +3,7 @@ int func1(int arr[5]) {
     return 0;
 }
 
-int func2(struct a c) {
+int func2() {
     return 0;
 }
 
@@ -11,7 +11,7 @@ int main(){
     int a = 2, arr_[5], i;
     1 + 1; //useless
     a + (a / 5); //useless
-    func2(a); //useless
+    func2(); //useless
     i = 4;
     while (i >= 0) {
         arr_[i] = i;
