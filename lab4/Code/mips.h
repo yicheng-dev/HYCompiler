@@ -10,6 +10,8 @@
 #define REG_FP 30
 #define REG_RA 31
 
+#define STACK_SIZE (4 * 1024)
+
 struct MipsOperand {
     enum {
         M_OP_LABEL,

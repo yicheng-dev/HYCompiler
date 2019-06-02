@@ -140,7 +140,7 @@ InterCode *ir_to_mips(InterCode *code) {
             return code->next;
         }
         case IR_DEC: { // DEC array [size]
-            make_m_op_get_m(code->u.sinop.result, code->u.sinop.op->u.constant.val);
+            make_m_op_get_m(code->u.sinop.result, code->u.sinop.op->u.constant.val * 4);
             return code->next;
         }
         case IR_IF: { // if a [relop] b goto label
@@ -230,7 +230,7 @@ InterCode *ir_to_mips(InterCode *code) {
             InterCode *cur_arg_code = code;
             int cur_offset = 0;
             while (cur_arg_code != NULL && cur_arg_code->kind == IR_ARG) {
-                MipsOperand *src_reg = make_m_op_m2r(code->u.nonop.result); // lw reg1 x
+                MipsOperand *src_reg = make_m_op_m2r(cur_arg_code->u.nonop.result); // lw reg1 x
                 MipsOperand *dst_mem = make_m_op_arg_mem(cur_offset, sp_reg); // offset(sp)
                 make_mips_code_sw(src_reg, dst_mem); // sw reg1 offset(sp)
                 cur_arg_code = cur_arg_code->next;
@@ -247,7 +247,7 @@ InterCode *ir_to_mips(InterCode *code) {
                 cur_param_code = cur_param_code->next;
                 cur_offset -= 4;
             }
-            assert(cur_offset == 4);
+            // assert(cur_offset == 4);
             return cur_param_code;
         }
         default: break;
@@ -302,8 +302,8 @@ MipsOperand *make_m_op_get_m(Operand *op, int size) {
         case OP_ADDRESS: {
             if (op->u.var.parent_func == NULL) {
                 op->u.address.parent_func = current_func;
-                op->u.address.offset = op->u.address.parent_func->top_offset;
                 op->u.address.parent_func->top_offset -= size;
+                op->u.address.offset = op->u.address.parent_func->top_offset;
                 offset = op->u.address.offset;
             }
             else

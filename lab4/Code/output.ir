@@ -1,16 +1,9 @@
 FUNCTION main :
-v1 := #0
-v2 := #1
-v3 := #0
-READ t1
-v4 := t1
-LABEL label1 :
-IF v3 >= v4 GOTO label2
-v5 := v1 + v2
-WRITE v2
-v1 := v2
-v2 := v5
-v3 := v3 + #1
-GOTO label1
-LABEL label2 :
+DEC v1 20
+t1 := &v1 + #12
+t2 := #55
+*t1 := t2
+t4 := &v1 + #12
+t3 := *t4
+WRITE t3
 RETURN #0

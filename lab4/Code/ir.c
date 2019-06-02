@@ -4,6 +4,7 @@
 #include "debug.h"
 #include "ir.h"
 #include "math.h"
+#include "mips.h"
 
 #define MAX_ARG_LIST_HEAD_NUM 10000000
 
@@ -43,8 +44,8 @@ void ir_init_hash_table() {
 void ir_insert_read_write_func(char *name) {
     Func *func = malloc(sizeof(Func));
     func->line_num = 0;
-    func->top_offset = -4;
-    func->stack_size = 128;
+    func->top_offset = 0;
+    func->stack_size = STACK_SIZE;
     Type *type = malloc(sizeof(type));
     type->kind = BASIC;
     type->u.basic = BASIC_INT;
@@ -121,8 +122,8 @@ InterCode *ir_fun_dec(AST_Node *node, Type *ret_type) {
     Func *func = malloc(sizeof(Func));
     strcpy(func->name, node->first_child->value);
     func->line_num = node->first_child->row_index;
-    func->stack_size = 128;
-    func->top_offset = -4;
+    func->stack_size = STACK_SIZE;
+    func->top_offset = 0;
     if (strcmp(node->first_child->sibling->sibling->name, "VarList") == 0){
         Field_List *params = ir_var_list(node->first_child->sibling->sibling);
         if (!params)
