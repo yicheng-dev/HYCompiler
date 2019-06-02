@@ -3,6 +3,7 @@
 
 #include "AST.h"
 #include "semantics.h"
+// #include "mips.h"
 
 struct Operand {
     enum {
@@ -55,7 +56,7 @@ struct Operand {
             int offset;
         } address;
     } u;
-    struct Operand *next;
+    struct Operand *next_arg;
     struct Operand *next_list_op;
 };
 

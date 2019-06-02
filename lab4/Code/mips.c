@@ -140,7 +140,7 @@ InterCode *ir_to_mips(InterCode *code) {
             return code->next;
         }
         case IR_DEC: { // DEC array [size]
-            make_m_op_get_m(code->u.sinop.result, code->u.sinop.op->u.constant.val * 4);
+            make_m_op_get_m(code->u.sinop.result, code->u.sinop.op->u.constant.val);
             return code->next;
         }
         case IR_IF: { // if a [relop] b goto label
@@ -151,6 +151,7 @@ InterCode *ir_to_mips(InterCode *code) {
             return code->next;
         }
         case IR_ASSIGN: { // a = b
+            assert(code->u.sinop.op->kind != OP_ADDRESS && code->u.sinop.result->kind != OP_ADDRESS);
             MipsOperand *op = make_m_op_m2r(code->u.sinop.op); // lw reg1 b
             MipsOperand *dst_reg = make_m_op_new_temp(); // reg2
             make_mips_code_move(dst_reg, op);
@@ -159,18 +160,23 @@ InterCode *ir_to_mips(InterCode *code) {
             return code->next;
         }
         case IR_DEREF_ASSIGN: { // a = *b
-            MipsOperand *dst_reg = make_m_op_m2r(code->u.sinop.op); // lw reg2 0(reg1(b))
+            MipsOperand *src_reg = make_m_op_m2r(code->u.sinop.op); // lw reg1 b
+            MipsOperand *src_mem = make_m_op_arg_mem(0, src_reg); // 0(reg1)
+            MipsOperand *src_reg2 = make_m_op_new_temp(); // reg2
+            make_mips_code_lw(src_reg2, src_mem); // lw reg2 0(reg1)
             MipsOperand *dst_mem = make_m_op_get_m(code->u.sinop.result, 4); // a
-            make_mips_code_sw(dst_reg, dst_mem); // sw reg2 a
+            make_mips_code_sw(src_reg2, dst_mem); // sw reg2 a
             return code->next; 
         }
         case IR_ASSIGN_TO_DEREF: { // *a = b
-            MipsOperand *src_reg = make_m_op_m2r(code->u.sinop.op);
-            MipsOperand *dst_mem = make_m_op_get_m(code->u.sinop.result, 4); // 0(reg1(a))
-            make_mips_code_sw(src_reg, dst_mem); // sw reg2 0(reg1(a))
+            MipsOperand *src_reg = make_m_op_m2r(code->u.sinop.op); // lw reg2 b
+            MipsOperand *dst_reg = make_m_op_m2r(code->u.sinop.result); // lw reg1 a
+            MipsOperand *dst_mem = make_m_op_arg_mem(0, dst_reg); // 0(reg1)
+            make_mips_code_sw(src_reg, dst_mem); // sw reg2 0(reg1)
             return code->next;
         }
         case IR_REF_ASSIGN: { // a = &b
+            assert(0);
             MipsOperand *src_mem = make_m_op_get_m(code->u.sinop.op, 4); // &b
             MipsOperand *dst_reg = make_m_op_new_temp(); // reg1
             make_mips_code_la(dst_reg, src_mem); // la reg1 &b
@@ -267,7 +273,7 @@ MipsOperand *make_m_op_new_temp() {
 void make_m_op_set_param(Operand *op, int offset) {
     assert(op->kind == OP_VARIABLE);
     // Log("%d belongs to %s", op->u.var.no, op->u.var.parent_func->name);
-    // assert(op->u.var.parent_func == NULL);
+    assert(op->u.var.parent_func == NULL);
     op->u.var.parent_func = current_func;
     op->u.var.offset = offset;
 }
@@ -280,8 +286,8 @@ MipsOperand *make_m_op_get_m(Operand *op, int size) {
         case OP_TEMP: {
             if (op->u.temp.parent_func == NULL) {
                 op->u.temp.parent_func = current_func;
-                op->u.temp.offset = op->u.temp.parent_func->top_offset;
                 op->u.temp.parent_func->top_offset -= size;
+                op->u.temp.offset = op->u.temp.parent_func->top_offset;
                 offset = op->u.temp.offset;
             }
             else
@@ -291,8 +297,8 @@ MipsOperand *make_m_op_get_m(Operand *op, int size) {
         case OP_VARIABLE: {
             if (op->u.var.parent_func == NULL) {
                 op->u.var.parent_func = current_func;
-                op->u.var.offset = op->u.var.parent_func->top_offset;
                 op->u.var.parent_func->top_offset -= size;
+                op->u.var.offset = op->u.var.parent_func->top_offset;
                 offset = op->u.var.offset;
             }
             else
@@ -300,18 +306,22 @@ MipsOperand *make_m_op_get_m(Operand *op, int size) {
             break;
         }
         case OP_ADDRESS: {
-            if (op->u.var.parent_func == NULL) {
+            if (op->u.address.parent_func == NULL) {
                 op->u.address.parent_func = current_func;
                 op->u.address.parent_func->top_offset -= size;
                 op->u.address.offset = op->u.address.parent_func->top_offset;
+                // Log("new offset: %d", op->u.address.offset);
                 offset = op->u.address.offset;
             }
-            else
+            else {
+                // Log("old offset: %d", op->u.address.offset);
                 offset = op->u.address.offset;
+            }
             break;
         }
         default: assert(0);
     }
+    assert((-current_func->top_offset) <= current_func->stack_size);
     MipsOperand *new_op = malloc(sizeof(MipsOperand));
     new_op->kind = M_OP_STA;
     new_op->u.sta.offset = offset;
@@ -406,6 +416,7 @@ void make_mips_code_la(MipsOperand *addr_reg, MipsOperand *addr_mem) {
     code->kind = MIPS_LA;
     code->u.sinop.op1 = addr_reg;
     code->u.sinop.op2 = addr_mem;
+    reg[code->u.sinop.op1->u.reg.id] = 1;
     insert_mips_code(code);
 }
 
@@ -482,6 +493,7 @@ void make_mips_code_arith(MipsOperand *dst_op, MipsOperand *op1, MipsOperand *op
         MipsCode *code2 = malloc(sizeof(MipsCode));
         code2->kind = MIPS_MFLO;
         code2->u.nonop.op1 = dst_op;
+        reg[dst_op->u.reg.id] = 1;
         insert_mips_code(code2);
     }
 }

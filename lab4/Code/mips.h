@@ -10,7 +10,7 @@
 #define REG_FP 30
 #define REG_RA 31
 
-#define STACK_SIZE (4 * 1024)
+#define STACK_SIZE (8 * 1024)
 
 struct MipsOperand {
     enum {

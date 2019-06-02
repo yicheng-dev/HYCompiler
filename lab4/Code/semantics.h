@@ -36,7 +36,9 @@ struct Type {
 struct Field_List {
     char name[MAX_NAME_LEN];
     struct Type *type;
-    struct Field_List *next;
+    struct Field_List *next_struct_field;
+    struct Field_List *hash_list_next;
+    struct Field_List *next_param;
     int wrapped_layer;
     int is_structure;
     int line_num;

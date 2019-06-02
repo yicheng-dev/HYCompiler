@@ -133,14 +133,14 @@ InterCode *ir_fun_dec(AST_Node *node, Type *ret_type) {
         func->param_size = 0;
         while (cur != NULL){
             func->param_size ++;
-            cur = cur->next;
+            cur = cur->next_param;
         }
         ir_insert_func_hash_table(hash_pjw(func->name), func->name, ret_type, func);
         InterCode *code1 = make_ir(IR_FUNCTION, func->op, NULL, NULL, NULL);
         cur = func->first_param;
         while (cur != NULL) {
             code1 = bind(code1, make_ir(IR_PARAM, cur->op, NULL, NULL, NULL));
-            cur = cur->next;
+            cur = cur->next_param;
         }
         return code1;
     }
@@ -158,7 +158,7 @@ Field_List *ir_var_list(AST_Node *node) {
     if (!field)
         return NULL;
     if (node->first_child->sibling){
-        field->next = ir_var_list(node->first_child->sibling->sibling);
+        field->next_param = ir_var_list(node->first_child->sibling->sibling);
     }
     return field;
 }
@@ -602,7 +602,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
                     if (strcmp(cur_field->name, node->first_child->sibling->sibling->value) == 0) {
                         break;
                     }
-                    cur_field = cur_field->next;
+                    cur_field = cur_field->next_struct_field;
                 }
                 assert(cur_field);
                 Operand *offset = make_constant(cur_field->offset);
@@ -691,7 +691,7 @@ InterCode *ir_exp(AST_Node *node, Operand *place) {
             InterCode *code2 = NULL;
             while (cur != NULL) {
                 code2 = bind(code2, make_ir(IR_ARG, cur, NULL, NULL, NULL));
-                cur = cur->next;
+                cur = cur->next_arg;
             }
             InterCode *code3 = NULL;
             if (place != NULL) {
@@ -768,7 +768,7 @@ Type *ir_exp_type(AST_Node *node){
                 if (strcmp(cur->name, node->first_child->sibling->sibling->value) == 0){
                     return cur->type;
                 }
-                cur = cur->next;
+                cur = cur->next_struct_field;
             }
             assert(0);
             return NULL;
@@ -945,7 +945,7 @@ InterCode *ir_args(AST_Node *node) {
         t1 = make_temp();
         code1 = ir_exp(node->first_child, t1);
     }
-    t1->next = arg_list_head[arg_list_index];
+    t1->next_arg = arg_list_head[arg_list_index];
     arg_list_head[arg_list_index] = t1;
     assert(arg_list_head[arg_list_index]);    
     if (node->first_child->sibling == NULL) {
@@ -988,10 +988,10 @@ Field_List *ir_def_list_structure(AST_Node *node, int wrapped_layer) {
         Field_List *cur = field; // insert field_lists of a def after the front def
         if (!cur)
             return NULL;
-        while(cur && cur->next){
-            cur = cur->next;
+        while(cur && cur->next_struct_field){
+            cur = cur->next_struct_field;
         }
-        cur->next = ir_def_list_structure(node->first_child->sibling, wrapped_layer);
+        cur->next_struct_field = ir_def_list_structure(node->first_child->sibling, wrapped_layer);
         return field;
     }
     return NULL;
@@ -1008,7 +1008,7 @@ Field_List *ir_dec_list_structure(AST_Node *node, Type *type, int wrapped_layer)
     Field_List *field = ir_dec_structure(node->first_child, type, wrapped_layer);
     if (node->first_child->sibling){
         if (field)
-            field->next = ir_dec_list_structure(node->first_child->sibling->sibling, type, wrapped_layer);
+            field->next_struct_field = ir_dec_list_structure(node->first_child->sibling->sibling, type, wrapped_layer);
     }
     return field;
 }
@@ -1068,7 +1068,7 @@ int build_size_offset(Type *structure_type) {
             field->type->u.structure.size = build_size_offset(field->type);
             offset += field->type->u.structure.size;
         }
-        field = field->next;
+        field = field->next_struct_field;
     }
     return offset;
 }
@@ -1130,7 +1130,7 @@ Field_List *ir_insert_field_hash_table(unsigned hash_index, char *str, Type *typ
     if (type->kind != BASIC)
         op = make_addr(op, 1);
     new_field->op = op;
-    new_field->next = var_hash[hash_index];
+    new_field->hash_list_next = var_hash[hash_index];
     var_hash[hash_index] = new_field;
     return new_field;            
 }
@@ -1171,7 +1171,7 @@ Field_List *ir_query_field_hash_table(unsigned hash_index, char *str, AST_Node *
     while(field_now != NULL){
         if (strcmp(field_now->name, str) == 0 && field_now->is_structure == look_for_structure)
             return field_now;
-        field_now = field_now->next;
+        field_now = field_now->hash_list_next;
     }
     return NULL;
 }
@@ -1308,7 +1308,7 @@ Operand *relop_reverse(Operand *relop) {
     Operand *new_relop = malloc(sizeof(Operand));
     new_relop->kind = OP_RELOP;
     new_relop->next_list_op = relop->next_list_op;
-    new_relop->next = relop->next;
+    new_relop->next_arg = relop->next_arg;
     switch (relop->u.relop.kind)
     {
     case RELOP_G: new_relop->u.relop.kind = RELOP_LE; break;
