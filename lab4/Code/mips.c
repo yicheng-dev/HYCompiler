@@ -16,6 +16,7 @@ static MipsOperand *sp_reg = NULL;
 static MipsOperand *v0_reg = NULL;
 static MipsOperand *ra_reg = NULL;
 static MipsOperand *a0_reg = NULL;
+static MipsOperand *zero_reg = NULL;
 static MipsCode *mips_head = NULL;
 
 // int cnt = 0;
@@ -36,6 +37,9 @@ void mips_init() {
     a0_reg = malloc(sizeof(MipsOperand));
     a0_reg->kind = M_OP_REG;
     a0_reg->u.reg.id = 4;
+    zero_reg = malloc(sizeof(MipsOperand));
+    zero_reg->kind = M_OP_REG;
+    zero_reg->u.reg.id = 0;
 }
 
 void insert_mips_code(MipsCode *code) {
@@ -107,10 +111,10 @@ InterCode *ir_to_mips(InterCode *code) {
             current_func = code->u.nonop.result->u.func.func;
             MipsOperand *func_op = make_m_op_func(code->u.nonop.result); 
             make_mips_code_func(func_op);
-            if (is_main_func(func_op)) {
-                make_mips_code_move(fp_reg, sp_reg);
-                make_mips_code_sp_add(- current_func->stack_size);
-            }
+            make_mips_code_sp_add(-4);
+            make_mips_code_sw(fp_reg, make_m_op_arg_mem(0, sp_reg));
+            make_mips_code_move(fp_reg, sp_reg);
+            make_mips_code_sp_add(- current_func->stack_size);
             return code->next;
         }
         case IR_LABEL: {
@@ -177,15 +181,19 @@ InterCode *ir_to_mips(InterCode *code) {
         case IR_RETURN: { // return x
             MipsOperand *src_reg = make_m_op_m2r(code->u.nonop.result); // lw|li reg1 x
             make_mips_code_move(v0_reg, src_reg); // move v0 reg1
+            make_mips_code_move(sp_reg, fp_reg); // move sp fp
+            make_mips_code_lw(fp_reg, make_m_op_arg_mem(0, sp_reg)); // lw fp 0(sp)
+            make_mips_code_sp_add(4); // sp = sp + 4
             make_mips_code_jr(ra_reg); // jr ra
             return code->next;
         }
         case IR_CALL: { // x = call f
             MipsOperand *dst_label = make_m_op_func(code->u.sinop.op); // f
+            make_mips_code_sp_add(-4); // sp = sp - 4
+            make_mips_code_sw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // sw ra 0(sp)
             make_mips_code_jal(dst_label); // jal f
-            make_mips_code_lw(ra_reg, make_m_op_arg_mem(-4)); // lw ra -4(fp)
-            make_mips_code_move(sp_reg, fp_reg); // sp = fp
-            make_mips_code_fp_add(current_func->stack_size); // fp = sp + size
+            make_mips_code_lw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // lw ra 0(sp)
+            make_mips_code_sp_add(4); // sp = sp + 4
             MipsOperand *ret_reg = make_m_op_new_temp(); // reg1
             make_mips_code_move(ret_reg, v0_reg); // move reg1 v0
             MipsOperand *ret_mem = make_m_op_get_m(code->u.sinop.result, 4); // x
@@ -195,13 +203,11 @@ InterCode *ir_to_mips(InterCode *code) {
         case IR_READ: { // read x
             MipsOperand *dst_reg = make_m_op_new_temp(); // reg1
             MipsOperand *read_mips_op = make_m_op_func(read_op); // read
-            make_mips_code_move(fp_reg, sp_reg); // fp = sp
             make_mips_code_sp_add(-4); // sp = sp - 4
-            make_mips_code_sw(ra_reg, make_m_op_arg_mem(-4)); // sw ra -4(fp)
+            make_mips_code_sw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // sw ra 0(sp)
             make_mips_code_jal(read_mips_op); // jal read
-            make_mips_code_lw(ra_reg, make_m_op_arg_mem(-4)); // lw ra -4(fp)
-            make_mips_code_move(sp_reg, fp_reg); // sp = fp
-            make_mips_code_fp_add(current_func->stack_size); // fp = fp + size
+            make_mips_code_lw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // lw ra 0(sp)
+            make_mips_code_sp_add(4); // sp = sp + size
             make_mips_code_move(dst_reg, v0_reg); // move reg1 v0
             MipsOperand *ret_mem = make_m_op_get_m(code->u.nonop.result, 4); // x
             make_mips_code_sw(dst_reg, ret_mem); // sw reg1 x
@@ -210,27 +216,23 @@ InterCode *ir_to_mips(InterCode *code) {
         case IR_WRITE: { // write x
             MipsOperand *dst_reg = make_m_op_new_temp(); // reg1
             MipsOperand *write_mips_op = make_m_op_func(write_op); // write
-            make_mips_code_move(fp_reg, sp_reg); // fp = sp
-            make_mips_code_sp_add(-4); // sp = sp - 4
             MipsOperand *x_reg = make_m_op_m2r(code->u.nonop.result); // lw reg1 x
             make_mips_code_move(a0_reg, x_reg); // move a0 x
-            make_mips_code_sw(ra_reg, make_m_op_arg_mem(-4)); // sw ra -4(fp)
+            make_mips_code_sp_add(-4); // sp = sp - 4
+            make_mips_code_sw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // sw ra 0(sp)
             make_mips_code_jal(write_mips_op); // jal write
-            make_mips_code_lw(ra_reg, make_m_op_arg_mem(-4)); // lw ra -4(fp)
-            make_mips_code_move(sp_reg, fp_reg); // sp = fp
-            make_mips_code_fp_add(current_func->stack_size); // fp = fp + size
+            make_mips_code_lw(ra_reg, make_m_op_arg_mem(0, sp_reg)); // lw ra 0(sp)
+            make_mips_code_sp_add(4); // sp = sp + size
+            make_mips_code_move(v0_reg, zero_reg); // move v0 $0
             return code->next;
         }
         case IR_ARG: { //因为在实现中arg是相连的，可以统一处理 arg x
             InterCode *cur_arg_code = code;
             int cur_offset = 0;
-            make_mips_code_move(fp_reg, sp_reg); // fp = sp
-            make_mips_code_sp_add(- next_func(code)->stack_size); // sp = sp - size
-            make_mips_code_sw(ra_reg, make_m_op_arg_mem(-4)); // sw ra -4(fp)
             while (cur_arg_code != NULL && cur_arg_code->kind == IR_ARG) {
                 MipsOperand *src_reg = make_m_op_m2r(code->u.nonop.result); // lw reg1 x
-                MipsOperand *dst_mem = make_m_op_arg_mem(cur_offset); // offset(fp)
-                make_mips_code_sw(src_reg, dst_mem); // sw reg1 offset(fp)
+                MipsOperand *dst_mem = make_m_op_arg_mem(cur_offset, sp_reg); // offset(sp)
+                make_mips_code_sw(src_reg, dst_mem); // sw reg1 offset(sp)
                 cur_arg_code = cur_arg_code->next;
                 cur_offset += 4; //参数不可能是数组、结构体
             }
@@ -239,13 +241,13 @@ InterCode *ir_to_mips(InterCode *code) {
         }
         case IR_PARAM: { //依次读取fp上方offset=4开始的参数 param x
             InterCode *cur_param_code = code;
-            int cur_offset = 4 * (current_func->param_size - 1);
+            int cur_offset = 4 * current_func->param_size + 4;
             while (cur_param_code != NULL && cur_param_code->kind == IR_PARAM) {
                 make_m_op_set_param(cur_param_code->u.nonop.result, cur_offset);
                 cur_param_code = cur_param_code->next;
                 cur_offset -= 4;
             }
-            assert(cur_offset == 0);
+            assert(cur_offset == 4);
             return cur_param_code;
         }
         default: break;
@@ -372,11 +374,11 @@ MipsOperand *make_m_op_m2r(Operand *op) {
     return NULL;
 }
 
-MipsOperand *make_m_op_arg_mem(int offset) {
+MipsOperand *make_m_op_arg_mem(int offset, MipsOperand *reg_op) {
     MipsOperand *op = malloc(sizeof(MipsOperand));
     op->kind = M_OP_STA;
     op->u.sta.offset = offset;
-    op->u.sta.reg_id = REG_FP;
+    op->u.sta.reg_id = reg_op->u.reg.id;
     return op;
 }
 
@@ -630,6 +632,7 @@ char *show_m_op_reg(int reg_id) {
     else if (reg_id >= 8 && reg_id <= 15) sprintf(buffer, "$t%d", reg_id - 8);
     else if (reg_id >= 16 && reg_id <= 23) sprintf(buffer, "$s%d", reg_id - 16);
     else if (reg_id >= 24 && reg_id <= 25) sprintf(buffer, "$t%d", reg_id - 16);
+    else if (reg_id == 0) sprintf(buffer, "$0");
     else assert(0);
     return buffer;
 }

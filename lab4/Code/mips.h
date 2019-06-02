@@ -89,7 +89,7 @@ MipsOperand *make_m_op_new_temp();
 void make_m_op_set_param(Operand *op, int offset);
 MipsOperand *make_m_op_get_m(Operand *op, int size);
 MipsOperand *make_m_op_m2r(Operand *op);
-MipsOperand *make_m_op_arg_mem(int offset);
+MipsOperand *make_m_op_arg_mem(int offset, MipsOperand *reg_op);
 MipsOperand *make_m_op_func(Operand *func_op);
 MipsOperand *make_m_op_label(Operand *label_op);
 

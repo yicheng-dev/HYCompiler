@@ -43,7 +43,7 @@ void ir_init_hash_table() {
 void ir_insert_read_write_func(char *name) {
     Func *func = malloc(sizeof(Func));
     func->line_num = 0;
-    func->top_offset = -8;
+    func->top_offset = -4;
     func->stack_size = 128;
     Type *type = malloc(sizeof(type));
     type->kind = BASIC;
@@ -122,7 +122,7 @@ InterCode *ir_fun_dec(AST_Node *node, Type *ret_type) {
     strcpy(func->name, node->first_child->value);
     func->line_num = node->first_child->row_index;
     func->stack_size = 128;
-    func->top_offset = -8;
+    func->top_offset = -4;
     if (strcmp(node->first_child->sibling->sibling->name, "VarList") == 0){
         Field_List *params = ir_var_list(node->first_child->sibling->sibling);
         if (!params)
