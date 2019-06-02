@@ -1,0 +1,49 @@
+struct A{
+    int a;
+    struct {
+        int b;
+        int c;
+    } d[3][10];
+    int e[10][20];
+    struct {
+        struct {
+            int f[100];
+        } g;
+    } h;
+};
+
+int main() {
+    struct A t;
+    int i = 0;
+    int j;
+    t.a = 1;
+    write(t.a);
+    while (i < 3) {
+        j = 0;
+        while (j < 10) {
+            t.d[i][j].b = t.a + 10 * i + j;
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    i = 0;
+    while (i < 3) {
+        j = 0;
+        while (j < 10) {
+            write(t.d[i][j].b);
+            j = j + 1;
+        }
+        i = i + 1;
+    }
+    i = 0;
+    while (i < 100) {
+        t.h.g.f[i] = i;
+        i = i + 1;
+    }
+    i = 0;
+    while (i < 100) {
+        write(t.h.g.f[i]);
+        i = i + 1;
+    }
+    return 0;
+}

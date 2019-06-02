@@ -1,0 +1,27 @@
+int func1(int arr[5]) {
+    arr[0] = (arr[1] = (arr[2] = (arr[3] = arr[4])));
+    return 0;
+}
+
+int func2() {
+    return 0;
+}
+
+int main(){
+    int a = 2, arr_[5], i;
+    1 + 1; //useless
+    a + (a / 5); //useless
+    func2(); //useless
+    i = 4;
+    while (i >= 0) {
+        arr_[i] = i;
+        i = i - 1;
+    }
+    func1(arr_); //useful
+    i = 0;
+    while (i < 5) {
+        write(arr_[i]);
+        i = i + 1;
+    }
+    return 0;
+}
