@@ -201,7 +201,7 @@ Func *sem_fun_dec(AST_Node *node){
         func->param_size = 0;
         while (cur){
             func->param_size ++;
-            cur = cur->next;
+            cur = cur->next_param;
         }
         return func;
     }
@@ -218,7 +218,7 @@ Field_List *sem_var_list(AST_Node *node){
     if (!field)
         return NULL;
     if (node->first_child->sibling){
-        field->next = sem_var_list(node->first_child->sibling->sibling);
+        field->next_param = sem_var_list(node->first_child->sibling->sibling);
     }
     return field;
 }
@@ -285,10 +285,10 @@ Field_List *sem_def_list(AST_Node *node, int in_structure, int wrapped_layer){
         if (!cur && in_structure)
             return NULL;
         if (in_structure){
-            while(cur && cur->next){
-                cur = cur->next;
+            while(cur && cur->next_struct_field){
+                cur = cur->next_struct_field;
             }
-            cur->next = sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
+            cur->next_struct_field = sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
         }
         else
             sem_def_list(node->first_child->sibling, in_structure, wrapped_layer);
@@ -308,7 +308,7 @@ Field_List *sem_dec_list(AST_Node *node, Type *type, int in_structure, int wrapp
     Field_List *field = sem_dec(node->first_child, type, in_structure, wrapped_layer);
     if (node->first_child->sibling){
         if (field && in_structure)
-            field->next = sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
+            field->next_struct_field = sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
         else
             sem_dec_list(node->first_child->sibling->sibling, type, in_structure, wrapped_layer);
     }
@@ -456,7 +456,7 @@ Type *sem_exp(AST_Node *node){
                     if (strcmp(cur->name, node->first_child->sibling->sibling->value) == 0){
                         return cur->type;
                     }
-                    cur = cur->next;
+                    cur = cur->next_struct_field;
                 }
                 char info[MAX_ERROR_INFO_LEN];
                 sprintf(info, "Non-existent field '%s'.\n", node->first_child->sibling->sibling->value);
@@ -571,7 +571,7 @@ Field_List *query_field_hash_table(unsigned hash_index, char *str, AST_Node *nod
     while(field_now != NULL){
         if (strcmp(field_now->name, str) == 0 && field_now->is_structure == look_for_structure)
             return field_now;
-        field_now = field_now->next;
+        field_now = field_now->hash_list_next;
     }
     return NULL;
 }
@@ -597,7 +597,7 @@ Field_List *insert_field_hash_table(unsigned hash_index, char *str, Type *type, 
                 break;
             }
         }
-        cur = cur->next;
+        cur = cur->hash_list_next;
     }
     new_field = malloc(sizeof(Field_List));
     strcpy(new_field->name, node->value);
@@ -605,7 +605,7 @@ Field_List *insert_field_hash_table(unsigned hash_index, char *str, Type *type, 
     new_field->wrapped_layer = wrapped_layer;
     new_field->is_structure = is_structure;
     new_field->line_num = node->row_index;
-    new_field->next = var_hash[hash_index];
+    new_field->next_struct_field = var_hash[hash_index];
     var_hash[hash_index] = new_field;
     return new_field;            
 }
@@ -723,8 +723,8 @@ int check_struct_equal_type_naive(Type *type1, Type *type2){
     while (cur1 && cur2){
         if (!check_equal_type(cur1->type, cur2->type))
             return 0;
-        cur1 = cur1->next;
-        cur2 = cur2->next;
+        cur1 = cur1->next_struct_field;
+        cur2 = cur2->next_struct_field;
     }
     if (cur1 || cur2){
         return 0;
@@ -768,7 +768,7 @@ int check_duplicate_field(Type *structure_type){
             }
         }
         strcpy(field_name[field_num++], cur->name);
-        cur = cur->next;
+        cur = cur->next_struct_field;
     }
     return 1;
 }
@@ -784,7 +784,7 @@ int check_equal_params(Field_List *field_list, Type *type){
             add_error_list(9, info, true_cur->line_num);
             return 0;
         }
-        formal_cur = formal_cur->next;
+        formal_cur = formal_cur->next_param;
         true_cur = true_cur->next_actual_param;
     }
     if (true_cur || formal_cur){
@@ -803,8 +803,8 @@ int check_twofunc_equal_params(Field_List *field1, Field_List *field2){
         if (!check_equal_type(cur1->type, cur2->type)){
             return 0;
         }
-        cur1 = cur1->next;
-        cur2 = cur2->next;
+        cur1 = cur1->next_param;
+        cur2 = cur2->next_param;
     }
     if (cur1 || cur2)
         return 0;
@@ -830,17 +830,17 @@ void pop_local_var(int wrapped_layer){
         if (elem == NULL)
             continue;
         while (elem && elem->wrapped_layer == wrapped_layer){
-            var_hash[i] = elem->next;
+            var_hash[i] = elem->hash_list_next;
             elem = var_hash[i];
         }
 		while (elem != NULL){
 			temp = elem;
-			elem = elem->next;
+			elem = elem->hash_list_next;
             if (elem == NULL){
                 break;
             }
 			else if(elem->wrapped_layer == wrapped_layer){
-			    temp->next = elem->next;
+			    temp->hash_list_next = elem->hash_list_next;
 		    }
 		}    
     }
@@ -864,7 +864,7 @@ Type *struct_type_to_list(Field_List *cur_field){
         Type *tail = flat_type_list;
         while (tail && tail->next_flat)
             tail = tail->next_flat;
-        tail->next_flat = struct_type_to_list(cur_field->next);
+        tail->next_flat = struct_type_to_list(cur_field->next_struct_field);
     }
 
     return flat_type_list;
@@ -901,7 +901,7 @@ void print_field_list(int hash_index){
     Field_List *field = var_hash[hash_index];
     while (field) {
         TestLog("%s %d", field->name, field->wrapped_layer);
-        field = field->next;
+        field = field->hash_list_next;
     }
     TestLog("End printing var_hash[%d]", hash_index);    
 }

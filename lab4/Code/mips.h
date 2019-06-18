@@ -119,9 +119,7 @@ char *show_m_op_reg(int reg_id);
 
 /* helper functions */
 void pre_load_head(FILE *fp);
-int is_main_func(MipsOperand *func_op);
 int get_temp_reg();
-Func *next_func(InterCode *code);
 
 
 

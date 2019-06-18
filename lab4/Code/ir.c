@@ -69,7 +69,7 @@ void ir_insert_read_write_func(char *name) {
 void ir_generate(AST_Node *root) {
     ir_init_hash_table();
     ir_program(root);
-    post_optimize();
+    // post_optimize();
 }
 
 void ir_program(AST_Node *node) {

@@ -17,7 +17,9 @@ static MipsOperand *v0_reg = NULL;
 static MipsOperand *ra_reg = NULL;
 static MipsOperand *a0_reg = NULL;
 static MipsOperand *zero_reg = NULL;
+
 static MipsCode *mips_head = NULL;
+static MipsCode *mips_tail = NULL;
 
 // int cnt = 0;
 
@@ -45,14 +47,12 @@ void mips_init() {
 void insert_mips_code(MipsCode *code) {
     if (code == NULL)
         return;
-    if (mips_head == NULL)
-        mips_head = code;
+    if (mips_head == NULL) {
+        mips_head = mips_tail = code;
+    }
     else {
-        MipsCode *cur_code = mips_head;
-        while (cur_code != NULL && cur_code->next != NULL) {
-            cur_code = cur_code->next;
-        }
-        cur_code->next = code;
+        mips_tail->next = code;
+        mips_tail = code;
     }
 }
 
@@ -83,24 +83,6 @@ static inline int reg_t(const int index) {
     if (index >= 0 && index <= 7)
         return reg[index + 8];
     return reg[index + 24];
-}
-
-static inline int reg_v(const int index) {
-    if (index < 0 || index > 1)
-        assert(0);
-    return reg[index + 2];
-}
-
-static inline int reg_a(const int index) {
-    if (index < 0 || index > 3)
-        assert(0);
-    return reg[index + 4];
-}
-
-static inline int reg_s(const int index) {
-    if (index < 0 || index > 7)
-        assert(0);
-    return reg[index + 16];
 }
 
 InterCode *ir_to_mips(InterCode *code) {
@@ -659,21 +641,4 @@ int get_temp_reg() {
     }
     assert(0);
     return -1;
-}
-
-int is_main_func(MipsOperand *func_op) {
-    assert(func_op != NULL && func_op->kind == M_OP_LABEL && func_op->u.label.is_func == 1);
-    if (strcmp(func_op->u.label.name, "main") == 0)
-        return 1;
-    return 0;
-}
-
-Func *next_func(InterCode *code) {
-    InterCode *cur = code;
-    while (cur != NULL && cur->kind == IR_ARG) {
-        cur = cur->next;
-    }
-    assert(cur != NULL && cur->kind == IR_CALL);
-    assert(cur->u.sinop.op->kind == OP_FUNC);
-    return cur->u.sinop.op->u.func.func;
 }

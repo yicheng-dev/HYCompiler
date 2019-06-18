@@ -40,4 +40,6 @@ clean:
 	rm -f lex.yy.c syntax.tab.c syntax.tab.h syntax.output
 	rm -f $(OBJS) $(OBJS:.o=.d)
 	rm -f $(LFC) $(YFC) $(YFC:.c=.h)
+	rm -f *.s
+	rm -f *.ir
 	rm -f *~

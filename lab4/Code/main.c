@@ -3,9 +3,10 @@
 #include "ir.h"
 #include "mips.h"
 
+#define OUTPUT_OPTION 0
+
 extern FILE *in;
 FILE *out;
-FILE *out2;
 extern AST_Node *root;
 extern int error_flag;
 
@@ -21,10 +22,6 @@ int main(int argc, char **argv) {
 		perror(argv[2]);
 		return 1;
 	}
-	if (!(out2 = fopen(argv[3], "w"))) {
-		perror(argv[3]);
-		return 1;
-	}
     root = malloc(sizeof(AST_Node));
 	yyparse();
     if (error_flag == 0){
@@ -34,12 +31,15 @@ int main(int argc, char **argv) {
 			print_error_list();
 		else {
 			ir_generate(root);
-			ir_to_file(out);
-			mips_generate();
-			mips_to_file(out2);
+			if (OUTPUT_OPTION == 0) {
+				ir_to_file(out);
+			}
+			else {
+				mips_generate();
+				mips_to_file(out);
+			}
 		}
     }
 	fclose(out);
-	fclose(out2);
 	return 0;
 }
